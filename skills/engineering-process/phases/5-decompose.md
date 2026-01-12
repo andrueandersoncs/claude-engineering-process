@@ -42,7 +42,7 @@ Prefer thin, complete slices:
 
 ## Output
 
-Create `docs/tasks-[feature].md` using [task template](../templates/task-breakdown.md):
+Create `tasks.md` in the story directory (`<project>/docs/stories/<story-slug>/tasks.md`) using [task template](../templates/task-breakdown.md):
 
 ```markdown
 # Tasks: [Feature Name]

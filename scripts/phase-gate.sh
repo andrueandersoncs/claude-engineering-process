@@ -4,18 +4,22 @@
 # Validates phase transitions and enforces workflow constraints
 #
 # Usage:
-#   phase-gate.sh [action]
+#   phase-gate.sh [action] [story-slug]
 #
 # Actions:
 #   pre-write  - Validate before write/edit operations
 #   check      - Display current phase status
 #   validate   - Validate current phase completion
+#   list       - List all stories
+#
+# If story-slug is not provided, uses the most recently modified story.
 #
 
 set -e
 
 ACTION="${1:-check}"
-WORKFLOW_STATE=".claude/workflow-state.json"
+STORY_SLUG="${2:-}"
+STORIES_DIR="docs/stories"
 
 # Color codes for output
 RED='\033[0;31m'
@@ -30,8 +34,51 @@ else
     INPUT=$(cat)
 fi
 
+# Find the most recently modified story if no slug provided
+find_active_story() {
+    if [ -n "$STORY_SLUG" ]; then
+        echo "$STORIES_DIR/$STORY_SLUG"
+        return
+    fi
+
+    # Find most recently modified workflow-state.json
+    if [ -d "$STORIES_DIR" ]; then
+        LATEST=$(find "$STORIES_DIR" -name "workflow-state.json" -type f 2>/dev/null | \
+            xargs ls -t 2>/dev/null | head -1)
+        if [ -n "$LATEST" ]; then
+            dirname "$LATEST"
+            return
+        fi
+    fi
+
+    echo ""
+}
+
+STORY_DIR=$(find_active_story)
+WORKFLOW_STATE="$STORY_DIR/workflow-state.json"
+
+# Handle list action separately (doesn't need active story)
+if [ "$ACTION" = "list" ]; then
+    echo "Engineering Process Stories"
+    echo "==========================="
+    if [ -d "$STORIES_DIR" ]; then
+        for state_file in "$STORIES_DIR"/*/workflow-state.json; do
+            if [ -f "$state_file" ]; then
+                DIR=$(dirname "$state_file")
+                SLUG=$(basename "$DIR")
+                STORY=$(jq -r '.story // "unknown"' "$state_file" 2>/dev/null || echo "unknown")
+                PHASE=$(jq -r '.currentPhase // "unknown"' "$state_file" 2>/dev/null || echo "unknown")
+                echo "  $SLUG: $STORY (phase: $PHASE)"
+            fi
+        done
+    else
+        echo "  No stories found"
+    fi
+    exit 0
+fi
+
 # Check if we're in a workflow
-if [ ! -f "$WORKFLOW_STATE" ]; then
+if [ -z "$STORY_DIR" ] || [ ! -f "$WORKFLOW_STATE" ]; then
     # No workflow active, allow all operations
     exit 0
 fi
@@ -40,6 +87,7 @@ fi
 CURRENT_PHASE=$(jq -r '.currentPhase // "unknown"' "$WORKFLOW_STATE" 2>/dev/null || echo "unknown")
 COMPLETED_PHASES=$(jq -r '.completedPhases // [] | join(",")' "$WORKFLOW_STATE" 2>/dev/null || echo "")
 STORY=$(jq -r '.story // "unknown"' "$WORKFLOW_STATE" 2>/dev/null || echo "unknown")
+SLUG=$(jq -r '.slug // "unknown"' "$WORKFLOW_STATE" 2>/dev/null || basename "$STORY_DIR")
 
 # Helper function to check if phase is completed
 phase_completed() {
@@ -75,16 +123,10 @@ case "$ACTION" in
 
         # Require design doc before implementation
         if [ "$CURRENT_PHASE" = "implement" ]; then
-            DESIGN_DOC=$(jq -r '.artifacts.design // empty' "$WORKFLOW_STATE" 2>/dev/null)
-            if [ -z "$DESIGN_DOC" ]; then
-                echo "Phase gate: No design document recorded in workflow state." >&2
-                echo "Tip: Complete the design phase and record the artifact path." >&2
-                # Warning only
-                exit 0
-            fi
+            DESIGN_DOC="$STORY_DIR/design.md"
             if [ ! -f "$DESIGN_DOC" ]; then
                 echo "Phase gate: Design document not found at: $DESIGN_DOC" >&2
-                echo "Tip: Ensure design document exists before implementing." >&2
+                echo "Tip: Complete the design phase before implementing." >&2
                 # Warning only
                 exit 0
             fi
@@ -99,22 +141,23 @@ case "$ACTION" in
         echo "Engineering Process Status"
         echo "=========================="
         echo "Story: $STORY"
+        echo "Slug: $SLUG"
+        echo "Directory: $STORY_DIR"
         echo "Current Phase: $CURRENT_PHASE"
         echo "Completed: $COMPLETED_PHASES"
 
         # Show artifacts
-        ARTIFACTS=$(jq -r '.artifacts // {} | to_entries[] | "  - \(.key): \(.value)"' "$WORKFLOW_STATE" 2>/dev/null)
-        if [ -n "$ARTIFACTS" ]; then
-            echo "Artifacts:"
-            echo "$ARTIFACTS"
-        fi
+        echo "Artifacts:"
+        [ -f "$STORY_DIR/research-notes.md" ] && echo "  - research: $STORY_DIR/research-notes.md"
+        [ -f "$STORY_DIR/design.md" ] && echo "  - design: $STORY_DIR/design.md"
+        [ -f "$STORY_DIR/tasks.md" ] && echo "  - tasks: $STORY_DIR/tasks.md"
 
         exit 0
         ;;
 
     "validate")
         # Validate current phase completion
-        echo "Validating phase: $CURRENT_PHASE"
+        echo "Validating phase: $CURRENT_PHASE (story: $SLUG)"
 
         case "$CURRENT_PHASE" in
             "understand")
@@ -123,29 +166,27 @@ case "$ACTION" in
                 echo "  - Ambiguities should be resolved"
                 ;;
             "research")
-                if [ -n "$(jq -r '.artifacts.research // empty' "$WORKFLOW_STATE" 2>/dev/null)" ]; then
-                    echo "  [OK] Research notes artifact recorded"
+                if [ -f "$STORY_DIR/research-notes.md" ]; then
+                    echo "  [OK] Research notes exist: $STORY_DIR/research-notes.md"
                 else
-                    echo "  [WARN] No research notes artifact in workflow state"
+                    echo "  [WARN] Research notes not found"
                 fi
                 ;;
             "design")
-                DESIGN=$(jq -r '.artifacts.design // empty' "$WORKFLOW_STATE" 2>/dev/null)
-                if [ -n "$DESIGN" ] && [ -f "$DESIGN" ]; then
-                    echo "  [OK] Design document exists: $DESIGN"
+                if [ -f "$STORY_DIR/design.md" ]; then
+                    echo "  [OK] Design document exists: $STORY_DIR/design.md"
                 else
-                    echo "  [WARN] Design document missing or not recorded"
+                    echo "  [WARN] Design document not found"
                 fi
                 ;;
             "implement")
-                TASKS=$(jq -r '.artifacts.tasks // empty' "$WORKFLOW_STATE" 2>/dev/null)
-                if [ -n "$TASKS" ] && [ -f "$TASKS" ]; then
-                    echo "  [OK] Task breakdown exists: $TASKS"
+                if [ -f "$STORY_DIR/tasks.md" ]; then
+                    echo "  [OK] Task breakdown exists: $STORY_DIR/tasks.md"
                     # Check for incomplete tasks
-                    INCOMPLETE=$(grep -c '^\- \[ \]' "$TASKS" 2>/dev/null || echo "0")
+                    INCOMPLETE=$(grep -c '^\- \[ \]' "$STORY_DIR/tasks.md" 2>/dev/null || echo "0")
                     echo "  [INFO] Incomplete tasks: $INCOMPLETE"
                 else
-                    echo "  [WARN] Task breakdown missing"
+                    echo "  [WARN] Task breakdown not found"
                 fi
                 ;;
             "validate")
@@ -163,7 +204,7 @@ case "$ACTION" in
 
     *)
         echo "Unknown action: $ACTION" >&2
-        echo "Usage: phase-gate.sh [pre-write|check|validate]" >&2
+        echo "Usage: phase-gate.sh [pre-write|check|validate|list] [story-slug]" >&2
         exit 1
         ;;
 esac

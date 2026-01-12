@@ -72,19 +72,28 @@ ln -s /path/to/claude-engineering-process ~/.claude/plugins/engineering-process
 
 ### Workflow State
 
-The plugin tracks progress in `.claude/workflow-state.json`:
+Each story gets its own directory with all artifacts co-located:
 
+```
+<project>/docs/stories/add-user-authentication/
+├── workflow-state.json    # Progress tracking
+├── research-notes.md      # Codebase research findings
+├── design.md              # Architecture decisions
+└── tasks.md               # Implementation breakdown
+```
+
+**workflow-state.json**:
 ```json
 {
   "story": "Add user authentication",
+  "slug": "add-user-authentication",
   "currentPhase": "design",
   "completedPhases": ["understand", "research", "scope"],
-  "artifacts": {
-    "research": "docs/research-notes.md",
-    "design": "docs/design-auth.md"
-  }
+  "startedAt": "2024-01-15T10:30:00Z"
 }
 ```
+
+> **Note**: `<project>` refers to the project you're working on (current working directory). Each story is isolated, allowing multiple stories to be tracked independently.
 
 ## Components
 

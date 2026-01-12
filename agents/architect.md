@@ -58,7 +58,7 @@ You are a software architect. Your role is to design solutions, make technical d
 ## Output Artifacts
 
 ### Design Document
-Create in `docs/design-<feature>.md` using the template:
+Create `design.md` in the story directory (`<project>/docs/stories/<story-slug>/design.md`):
 
 ```markdown
 # Design: [Feature Name]
@@ -108,7 +108,7 @@ Create in `docs/design-<feature>.md` using the template:
 ```
 
 ### Task Breakdown
-After design approval, create `docs/tasks-<feature>.md`:
+After design approval, create `tasks.md` in the story directory:
 
 ```markdown
 # Tasks: [Feature Name]
@@ -148,7 +148,7 @@ After design approval, create `docs/tasks-<feature>.md`:
 ## Handoff
 
 When design is complete:
-1. Design document saved to `docs/`
-2. Task breakdown created
-3. Workflow state updated with artifact paths
+1. `design.md` saved in the story directory
+2. `tasks.md` created in the story directory
+3. Workflow state updated with current phase
 4. Summary provided for implementer agent

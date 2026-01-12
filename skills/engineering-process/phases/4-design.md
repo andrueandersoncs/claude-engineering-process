@@ -72,7 +72,7 @@ Expected output: Design document using template
 
 ## Output
 
-Create `docs/design-[feature].md` using [design template](../templates/design-doc.md):
+Create `design.md` in the story directory (`<project>/docs/stories/<story-slug>/design.md`) using [design template](../templates/design-doc.md):
 
 ```markdown
 # Design: [Feature Name]

@@ -40,7 +40,19 @@ The plugin is documentation-driven (Markdown + JSON + Bash scripts) with no comp
 
 ### State Management
 
-Workflow progress is tracked in `.claude/workflow-state.json` with current phase, completed phases, and artifact paths.
+Each story gets its own isolated directory at `<project>/docs/stories/<story-slug>/`:
+
+```
+<project>/docs/stories/<story-slug>/
+├── workflow-state.json    # Progress tracking
+├── research-notes.md      # Phase 2 output
+├── design.md              # Phase 4 output
+└── tasks.md               # Phase 5 output
+```
+
+The `<story-slug>` is derived from the story title (e.g., "add-user-authentication") or issue number (e.g., "issue-123").
+
+> **Important**: `<project>` refers to the target project directory (current working directory), not the plugin installation directory. Each story is isolated, allowing multiple stories to be tracked independently.
 
 ## Development Commands
 

@@ -16,21 +16,31 @@ You are orchestrating a structured software engineering workflow that transforms
 
 ## Workflow State
 
-Track progress in `.claude/workflow-state.json`:
+Each story gets its own directory at `<project>/docs/stories/<story-slug>/` containing all artifacts:
+
+```
+<project>/docs/stories/<story-slug>/
+├── workflow-state.json    # Workflow progress and metadata
+├── research-notes.md      # Phase 2 output
+├── design.md              # Phase 4 output
+└── tasks.md               # Phase 5 output
+```
+
+The `<story-slug>` is derived from the story title (e.g., "add-user-authentication" from "Add user authentication") or issue number (e.g., "issue-123").
+
+**workflow-state.json**:
 ```json
 {
   "story": "Description of the work",
+  "slug": "add-user-authentication",
   "source": "issue URL or 'direct'",
   "currentPhase": "understand",
   "completedPhases": [],
-  "startedAt": "ISO timestamp",
-  "artifacts": {
-    "research": "docs/research-notes.md",
-    "design": "docs/design-feature.md",
-    "tasks": "docs/tasks-feature.md"
-  }
+  "startedAt": "ISO timestamp"
 }
 ```
+
+> **Note**: All paths are relative to the target project directory (current working directory), never the plugin directory. Each story is isolated, allowing multiple stories to be worked on independently.
 
 ## Phase Overview
 
@@ -74,7 +84,7 @@ Load these on-demand (not all at once):
 - [Completion Checklist](checklists/completion-checklist.md)
 
 ### Templates
-Copy to project `docs/` directory when needed:
+Copy to the story directory when needed:
 - [Design Document Template](templates/design-doc.md)
 - [Task Breakdown Template](templates/task-breakdown.md)
 - [PR Description Template](templates/pr-description.md)
@@ -104,9 +114,10 @@ Delegate to the explorer agent:
 3. Begin with Understand phase
 
 ### Pausing/Resuming
-- Workflow state persists in `.claude/workflow-state.json`
+- Workflow state persists in `<project>/docs/stories/<story-slug>/workflow-state.json`
 - Resume by reading state and continuing from `currentPhase`
-- Use `/engineering-process:checkpoint` to verify status
+- Use `/engineering-process:checkpoint <story-slug>` to verify status
+- List all stories with `/engineering-process:phase` (shows available workflows)
 
 ### Skipping Phases
 - Allowed but will trigger warning

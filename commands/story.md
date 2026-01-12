@@ -17,23 +17,32 @@ This can be:
 ## Initialization Steps
 
 1. **Parse the input** to understand what work is being requested
-2. **Create workflow state** in the project:
+
+2. **Generate a story slug** from the input:
+   - From title: "Add user authentication" → `add-user-authentication`
+   - From issue: "#123" or issue URL → `issue-123`
+   - Use lowercase, hyphens for spaces, remove special characters
+
+3. **Create story directory** in the target project:
    ```bash
-   mkdir -p .claude
+   mkdir -p <project>/docs/stories/<story-slug>
    ```
-   Then create `.claude/workflow-state.json`:
+
+4. **Create workflow state** at `<project>/docs/stories/<story-slug>/workflow-state.json`:
    ```json
    {
      "story": "<parsed story description>",
+     "slug": "<story-slug>",
      "source": "<issue URL or 'direct'>",
      "currentPhase": "understand",
      "completedPhases": [],
-     "startedAt": "<ISO timestamp>",
-     "artifacts": {}
+     "startedAt": "<ISO timestamp>"
    }
    ```
 
-3. **Activate the engineering-process skill** to orchestrate the full workflow
+   > **Note**: `<project>` is the current working directory. Each story gets its own isolated directory for all artifacts.
+
+5. **Activate the engineering-process skill** to orchestrate the full workflow
 
 ## Workflow Overview
 

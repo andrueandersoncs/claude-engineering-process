@@ -68,7 +68,7 @@ Expected output: Research notes with file:line references
 
 ## Output
 
-Create `docs/research-notes.md`:
+Create `research-notes.md` in the story directory (`<project>/docs/stories/<story-slug>/research-notes.md`):
 
 ```markdown
 # Research Notes: [Feature Name]
