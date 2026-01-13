@@ -25,7 +25,34 @@ This phase uses the `scope-analyst` agent to classify scope items:
 - Business logic decisions
 
 ## Agent
-`scope-analyst` for classification, then user confirmation if needed
+
+**Delegate to `scope-analyst`** for scope classification when:
+- Scope includes modifications to existing functionality
+- External dependencies are involved
+- Security-sensitive changes are proposed
+
+### Delegation Syntax
+
+```
+Task tool call:
+  subagent_type: "engineering-process:scope-analyst"
+  prompt: |
+    Analyze the proposed scope for [feature name].
+
+    Context: [Current phase and requirements]
+
+    Proposed scope items:
+    1. [Item 1]
+    2. [Item 2]
+
+    Codebase patterns:
+    - [Relevant existing patterns]
+
+    Classify each item as GREEN/YELLOW/RED and provide
+    auto-approval recommendation.
+```
+
+For simple, purely additive scope that clearly follows existing patterns, manual classification is sufficient.
 
 ## Activities
 

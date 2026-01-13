@@ -1,5 +1,5 @@
 {
-  "description": "Validation gates for the engineering process workflow. Enforces phase transitions and quality checks.",
+  "description": "Validation gates for the engineering process workflow. Enforces phase transitions, preconditions, and quality checks.",
   "hooks": {
     "PreToolUse": [
       {
@@ -21,6 +21,16 @@
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/scripts/post-write.sh",
             "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/check-phase-transition.sh",
+            "timeout": 15
           }
         ]
       }

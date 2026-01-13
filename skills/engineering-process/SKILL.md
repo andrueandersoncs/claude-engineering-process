@@ -107,15 +107,36 @@ This workflow uses intelligent delegation to reduce user friction while preservi
 
 ### Delegation Agents
 
-| Agent | Purpose |
-|-------|---------|
-| `explorer` | Read-only codebase exploration |
-| `architect` | Solution design and task breakdown |
-| `implementer` | Code and test implementation |
-| `reviewer` | Code review and quality verification |
-| `validator` | Programmatic phase completion checks, auto-advance decisions |
-| `scope-analyst` | Classify scope as auto-approvable vs. user-required |
-| `decision-maker` | Select from alternatives when clear technical winner exists |
+| Agent | Purpose | When to Use |
+|-------|---------|-------------|
+| `explorer` | Read-only codebase exploration | Phase 2 (Research) |
+| `architect` | Solution design and task breakdown | Phases 4-5 (Design, Decompose) |
+| `implementer` | Code and test implementation | Phases 6, 8 (Implement, Deploy) |
+| `reviewer` | Code review and quality verification | Phase 7 (Validate) |
+| `validator` | Programmatic phase completion checks | Phase transitions (automatic via hooks) |
+| `scope-analyst` | Classify scope as auto-approvable vs. user-required | Phase 3 (Scope) when scope is ambiguous |
+| `decision-maker` | Select from alternatives when clear technical winner exists | Phase 4 (Design) when multiple options exist |
+| `adversary` | Generate adversarial test cases for requirements | Optional: QA/testing verification |
+
+### Agent Invocation
+
+To delegate to an agent, use the Task tool with the appropriate `subagent_type`:
+
+```
+Task tool call:
+  subagent_type: "engineering-process:explorer"
+  prompt: "Research the authentication system..."
+```
+
+Available subagent types:
+- `engineering-process:explorer` - Read-only codebase exploration
+- `engineering-process:architect` - Solution design
+- `engineering-process:implementer` - Code implementation
+- `engineering-process:reviewer` - Code review
+- `engineering-process:validator` - Phase validation (usually automatic)
+- `engineering-process:scope-analyst` - Scope classification
+- `engineering-process:decision-maker` - Technical decision making
+- `engineering-process:adversary` - Adversarial requirement testing
 
 ### Auto-Advance Flow
 

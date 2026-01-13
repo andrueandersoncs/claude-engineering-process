@@ -24,9 +24,51 @@ This phase can auto-advance to Deploy when ALL conditions are met:
 **Minor issues:** Warn but allow advance (logged for future cleanup).
 
 ## Agent
+
 **Delegate to: `reviewer`** for code review, then `validator` for programmatic checks.
 
 The reviewer agent has read-only access plus ability to run tests, specializing in quality verification.
+
+### Delegation Syntax
+
+**For Code Review:**
+```
+Task tool call:
+  subagent_type: "engineering-process:reviewer"
+  prompt: |
+    Review the implementation for [feature name].
+
+    Design document: docs/stories/[slug]/design.md
+    Task breakdown: docs/stories/[slug]/tasks.md
+
+    Acceptance criteria:
+    1. [Criterion 1]
+    2. [Criterion 2]
+
+    Please:
+    1. Review all code changes
+    2. Run the test suite
+    3. Verify each acceptance criterion has a passing test
+    4. Check for security issues
+    5. Provide structured review report
+```
+
+**For Programmatic Validation:**
+
+The `validator` agent is automatically invoked via hooks when workflow artifacts are written.
+Manual invocation is available via:
+```
+Task tool call:
+  subagent_type: "engineering-process:validator"
+  prompt: |
+    Validate completion criteria for the validate phase.
+    Story: [slug]
+
+    Check:
+    - All tests pass
+    - Acceptance criteria mapped to tests
+    - No critical/major review issues
+```
 
 ## Activities
 

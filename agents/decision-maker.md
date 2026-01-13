@@ -1,12 +1,39 @@
 ---
+name: decision-maker
 description: Make technical decisions when alternatives exist and a clear recommendation can be made. Selects from options based on project patterns, constraints, and best practices. Documents decisions for user review.
-mode: subagent
-model: anthropic/claude-sonnet-4-20250514
-temperature: 0.3
-tools:
-  edit: false
-  bash: false
+tools: Read, Grep, Glob
+disallowedTools: Write, Edit, Bash
+model: sonnet
+permissionMode: default
 ---
+
+# Usage Context
+
+This agent is **optional** and used during **Phase 4 (Design)** when:
+- Multiple technical approaches are viable
+- The architect needs to choose between alternatives
+- A clear technical winner exists based on project patterns
+
+**Invocation:**
+```
+Task tool call:
+  subagent_type: "engineering-process:decision-maker"
+  prompt: |
+    Evaluate options for [technical decision].
+
+    Options:
+    1. [Option A] - [description]
+    2. [Option B] - [description]
+
+    Project constraints:
+    - [Constraint 1]
+    - [Constraint 2]
+
+    Existing patterns in codebase:
+    - [Pattern references]
+
+    Provide scored recommendation.
+```
 
 # Decision Maker Agent
 
