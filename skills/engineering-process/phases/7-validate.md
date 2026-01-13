@@ -127,7 +127,111 @@ If relevant:
 - Reasonable response times
 - No memory leaks
 
-### 6. Manual Testing
+### 6. Software Verification (Beyond Basic Tests)
+
+Use the [Software Verification Checklist](../checklists/software-verification-checklist.md) to apply verification techniques appropriate to the risk level.
+
+#### The Verification Pyramid
+
+Apply verification in layers based on risk:
+
+```
+┌─────────────────────────────────────────┐
+│          DEEP CHECKS                    │  ← High/Critical risk only
+│    Mutation testing (full)              │
+│    Security fuzzing                     │
+│    Symbolic execution (optional)        │
+├─────────────────────────────────────────┤
+│          MEDIUM CHECKS                  │  ← Medium+ risk
+│    Property-based testing               │
+│    Quick mutation testing               │
+│    Fuzzing (for parsers/input handlers) │
+│    Metamorphic testing (for complex calc)│
+├─────────────────────────────────────────┤
+│          FAST CHECKS                    │  ← All code (already done)
+│    Type checking, linting, unit tests   │
+└─────────────────────────────────────────┘
+```
+
+#### 6.1 Property-Based Testing
+
+For code with clear input/output relationships:
+
+```bash
+# Python (Hypothesis)
+pytest tests/ -m "property"
+
+# JavaScript (fast-check)
+npm test -- --testPathPattern="property"
+```
+
+**Properties to verify:**
+- Roundtrip: `decode(encode(x)) === x`
+- Idempotence: `f(f(x)) === f(x)`
+- Commutativity/Associativity where applicable
+
+#### 6.2 Mutation Testing
+
+For critical business logic:
+
+```bash
+# Run mutation tests
+./scripts/run-mutation-tests.sh --quick
+
+# For high-risk code, run full mutation testing
+./scripts/run-mutation-tests.sh --full --threshold 80
+```
+
+**Mutation score targets:**
+- Low risk: > 50%
+- Medium risk: > 65%
+- High risk: > 80%
+
+#### 6.3 Fuzzing
+
+For parsers, deserializers, and input handlers:
+
+```bash
+# Quick fuzz run (5 minutes)
+./scripts/run-fuzzer.sh --quick
+
+# Thorough fuzz run (1 hour)
+./scripts/run-fuzzer.sh --thorough
+```
+
+#### 6.4 Metamorphic Testing
+
+For code without clear oracles (ML, complex calculations):
+
+Document metamorphic relations:
+```
+MR1: search(query, data) ⊆ search(broader_query, data)
+MR2: sort(sort(x)) === sort(x)
+MR3: encrypt(decrypt(x, k), k) === x
+```
+
+#### 6.5 Invoke Verification Advisor
+
+For guidance on which techniques to apply:
+
+```
+Task tool call:
+  subagent_type: "verification-advisor"
+  prompt: |
+    Recommend verification techniques for this code:
+
+    Files changed:
+    - src/parsers/json-handler.ts
+    - src/services/payment.ts
+
+    Risk assessment: HIGH (handles payments)
+
+    What verification techniques should we apply?
+```
+
+See the [Verification Guide](../VERIFICATION_GUIDE.md) for technique details.
+
+### 7. Manual Testing
 Walk through the feature:
 - Happy path works
 - Edge cases handled
@@ -236,6 +340,20 @@ Status: [APPROVED / CHANGES REQUESTED]
 - [ ] Performance acceptable
 - [ ] Review report documented
 - [ ] All critical/major issues addressed
+
+### Software Verification Criteria (Risk-Dependent)
+
+**For Low Risk Code:**
+- [ ] Fast checks pass (type checking, linting, unit tests)
+
+**For Medium Risk Code (add to above):**
+- [ ] Property-based tests pass (if applicable)
+- [ ] Quick mutation testing score > 65%
+
+**For High/Critical Risk Code (add to above):**
+- [ ] Full mutation testing score > 80%
+- [ ] Fuzzing completed (for input handlers)
+- [ ] [Software Verification Checklist](../checklists/software-verification-checklist.md) completed
 
 ## Common Pitfalls
 

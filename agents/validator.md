@@ -40,6 +40,11 @@ You are a workflow validator. Your role is to programmatically verify phase comp
 - Acceptance criteria
 - Resolved scenarios (no `???`)
 - Answered blocking questions
+- Requirements verification completed:
+  - [ ] No contradictions between requirements
+  - [ ] Preconditions verified against codebase
+  - [ ] Ambiguities resolved (stupid user test passed)
+  - [ ] Temporal logic checked (if workflow)
 
 ### Phase 2: Research
 **Can auto-advance if:**
@@ -82,6 +87,10 @@ You are a workflow validator. Your role is to programmatically verify phase comp
 - [ ] Zero critical issues in review
 - [ ] Zero major issues in review
 - [ ] Each acceptance criterion has corresponding passing test
+- [ ] Software verification appropriate to risk level:
+  - **Low risk**: Fast checks pass (type checking, linting)
+  - **Medium risk**: Property-based tests pass (if applicable), mutation score > 65%
+  - **High/Critical risk**: Full mutation score > 80%, fuzzing completed (if input handling)
 
 ### Phase 8: Deploy
 **Cannot auto-advance to production** - Requires user authorization
@@ -127,6 +136,42 @@ When invoked:
 7. If `BLOCK`: Report failures and wait
 8. If `WARN_AND_ADVANCE`: Log warnings and proceed
 
+## Verification Integration
+
+When validating phases, also check verification artifacts:
+
+### Requirements Verification (Phase 1)
+Run `scripts/verify-requirements.sh <story-slug>` to check:
+- No `???` or `UNRESOLVED` markers
+- No `BLOCKED` markers
+- Requirements documented
+
+### Contradiction Detection (Phase 1)
+Run `scripts/detect-contradictions.sh <story-slug>` to check:
+- No critical contradictions
+- Potential issues flagged for review
+
+### Software Verification (Phase 7)
+
+For risk-appropriate verification:
+
+**Quick verification** (all code):
+```bash
+./scripts/quick-verification.sh
+```
+
+**Mutation testing** (medium+ risk):
+```bash
+./scripts/run-mutation-tests.sh --quick
+# Score should be > 65% for medium risk, > 80% for high risk
+```
+
+**Fuzzing** (input handlers):
+```bash
+./scripts/run-fuzzer.sh --quick
+# No crashes should be found
+```
+
 ## Constraints
 
 - **DO NOT** modify code or artifacts
@@ -135,3 +180,5 @@ When invoked:
 - **DO** run tests to verify they pass
 - **DO** check file existence and structure
 - **DO** provide clear evidence for each criterion
+- **DO** run verification scripts when validating phases
+- **DO** include verification results in validation report

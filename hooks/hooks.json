@@ -20,6 +20,11 @@
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/post-write.sh\"",
             "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/quick-verification.sh\" \"$FILE\"",
+            "timeout": 60
           }
         ]
       }
@@ -36,5 +41,17 @@
         ]
       }
     ]
+  },
+  "_comment": "Verification hooks documentation",
+  "_verification_hooks": {
+    "description": "Additional verification scripts that can be installed for enhanced verification",
+    "scripts": {
+      "verify-requirements.sh": "Run during Phase 1 to verify requirements completeness",
+      "detect-contradictions.sh": "Run during Phase 1 to detect requirement contradictions",
+      "quick-verification.sh": "Run on every file edit (type check, lint, quick tests)",
+      "run-mutation-tests.sh": "Run during Phase 7 for mutation testing",
+      "run-fuzzer.sh": "Run during Phase 7 for fuzz testing"
+    },
+    "installation": "Copy scripts from plugin's scripts/ directory to $CLAUDE_PROJECT_DIR/.claude/hooks/"
   }
 }
