@@ -3,8 +3,29 @@
 ## Purpose
 Define clear boundaries for the work. Distinguish between what's in scope for this task and what's adjacent work that should be separate.
 
+## 🟡 PARTIALLY DELEGATED PHASE
+
+This phase uses the `scope-analyst` agent to classify scope items:
+
+| Classification | Action |
+|---------------|--------|
+| **GREEN** (Additive, pattern-following) | Auto-approved, proceed without user |
+| **YELLOW** (Cross-cutting, ambiguous) | User must confirm |
+| **RED** (Removals, security, business logic) | User must decide |
+
+**Auto-advance conditions:**
+- All scope items are GREEN (strictly additive)
+- No external dependencies
+- Scope directly maps to user story requirements
+
+**User required when:**
+- Any scope item removes/deprecates functionality
+- External service integrations needed
+- Security-sensitive changes
+- Business logic decisions
+
 ## Agent
-None (main conversation handles this phase, may consult with user)
+`scope-analyst` for classification, then user confirmation if needed
 
 ## Activities
 
