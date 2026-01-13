@@ -48,6 +48,11 @@ DEPLOY     → Run tests before and after deployment
 - [Vitest Guide](VITEST_GUIDE.md) - Unit and integration testing with Vitest
 - [Testing Checklist](checklists/testing-checklist.md) - Phase-by-phase verification
 
+### Verification Guides
+- [Verification Guide](VERIFICATION_GUIDE.md) - Comprehensive verification techniques (requirements + software)
+- [Requirements Verification Checklist](checklists/requirement-verification-checklist.md) - Phase 1 verification
+- [Software Verification Checklist](checklists/software-verification-checklist.md) - Phase 6-7 verification
+
 ## Workflow State
 
 Each story gets its own directory at `<project>/docs/stories/<story-slug>/` containing all artifacts:
@@ -125,34 +130,20 @@ This workflow uses intelligent delegation to reduce user friction while preservi
 | `scope-analyst` | Classify scope as auto-approvable vs. user-required | Phase 3 (Scope) when scope is ambiguous |
 | `decision-maker` | Select from alternatives when clear technical winner exists | Phase 4 (Design) when multiple options exist |
 | `adversary` | Generate adversarial test cases for requirements | Optional: QA/testing verification |
+| `requirements-verifier` | Verify requirements for contradictions, preconditions, ambiguity | Phase 1 (Understand) for non-trivial features |
+| `verification-advisor` | Recommend appropriate software verification techniques | Phase 4 (Design), Phase 7 (Validate) |
 
 ### Agent Invocation
 
-To delegate to an agent, use the Task tool with the agent's name as the `subagent_type`. Plugin agents are available by their `name` field from their frontmatter.
+Use the Task tool with `subagent_type` set to the agent name from the table above (e.g., `explorer`, `architect`, `implementer`).
 
-**Example delegation:**
 ```
-Use the Task tool with:
+Task tool:
   subagent_type: "explorer"
   prompt: "Research the authentication system. Focus on: [specific aspects]"
 ```
 
-**Available plugin agents:**
-| Agent | subagent_type | Purpose |
-|-------|---------------|---------|
-| Explorer | `explorer` | Read-only codebase exploration |
-| Architect | `architect` | Solution design and task breakdown |
-| Implementer | `implementer` | Code and test implementation |
-| Reviewer | `reviewer` | Code review and quality verification |
-| Validator | `validator` | Phase validation checks |
-| Scope Analyst | `scope-analyst` | Scope classification |
-| Decision Maker | `decision-maker` | Technical decision making |
-| Adversary | `adversary` | Adversarial requirement testing |
-
-**Built-in agents** (always available):
-- `Explore` - Fast codebase exploration (uses Haiku)
-- `Plan` - Research for planning mode
-- `general-purpose` - Complex multi-step tasks
+**Built-in agents** (always available): `Explore` (fast, Haiku), `Plan` (read-only), `general-purpose` (all tools)
 
 ### Auto-Advance Flow
 
@@ -357,125 +348,20 @@ Load these on-demand (not all at once):
 
 ## Phase 6: Implementation Workflow
 
-**Phase 6 uses iterative task execution.** Each task is delegated to the implementer agent, which runs in its own context to maintain quality.
+**See [Phase 6: Implement](phases/6-implement.md) for complete implementation workflow details.**
 
-### Why Per-Task Delegation?
+Phase 6 uses **iterative per-task delegation** to the implementer agent. Key points:
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Fresh context per task = consistent quality throughout        │
-│                                                                 │
-│  Each implementer invocation gets focused context:             │
-│  - The specific task to complete                                │
-│  - Relevant design and research context                         │
-│  - No accumulated cruft from previous tasks                     │
-└─────────────────────────────────────────────────────────────────┘
-```
+1. **Fresh context per task** — Each task gets focused context without accumulated state
+2. **Backpressure validation** — Run `npm test` via Bash after EVERY task (mandatory)
+3. **Never trust self-reports** — Always verify programmatically before advancing
+4. **TDD sequence** — Write failing test → Verify failure → Implement → Verify pass
 
-### Implementation Execution Flow
-
-When entering Phase 6, follow this sequence:
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│  1. Read tasks.md to find the next incomplete task [ ]       │
-│  2. Delegate to implementer agent via Task tool              │
-│  3. Wait for implementer to complete the task                │
-│  4. RUN VALIDATION via Bash tool (npm test) ← MANDATORY      │
-│  5. If PASS: mark task [x], proceed to step 1                │
-│  6. If FAIL: fix issues, do NOT proceed until tests pass     │
-│  7. Repeat until all tasks are marked [x] complete           │
-└──────────────────────────────────────────────────────────────┘
-
-Step 4 is the "downstream backpressure" gate from WIGGUM.md.
-You must use the Bash tool to verify—never trust self-reports.
-```
-
-### Task Delegation Template
-
-For each task, use the Task tool:
-
+**Quick reference:**
 ```
 Task tool:
   subagent_type: "implementer"
-  prompt: |
-    ## Your Task
-    Complete Task X.Y: [task title]
-
-    ## Task Details
-    [Copy the full task description from tasks.md]
-
-    ## Context
-    - Story: docs/stories/<slug>/
-    - Design: docs/stories/<slug>/design.md
-    - Research: docs/stories/<slug>/research-notes.md
-
-    ## TDD Requirements
-    1. Write the failing test FIRST
-    2. Run tests to verify failure
-    3. Implement minimum code to pass
-    4. Run tests to verify success
-    5. Mark task complete in tasks.md
-```
-
-### Validation Between Tasks (CRITICAL: Backpressure Gate)
-
-**You MUST run programmatic validation after each task using the Bash tool.** This is the downstream backpressure mechanism from WIGGUM.md that catches errors early. Do NOT skip this step or trust self-reported success.
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ IRON RULE: Never advance to the next task without running       │
-│ validation via Bash tool. The implementer's word is not enough. │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-**After EVERY task delegation, immediately run:**
-
-```
-Use the Bash tool to run validation:
-  command: "npm test"  # or yarn test, pnpm test, etc.
-
-If tests pass, also run:
-  command: "npm run lint"  # if configured in package.json
-  command: "npm run typecheck"  # if configured
-```
-
-**Validation Decision Flow:**
-
-| Result | Action |
-|--------|--------|
-| **All pass** | Mark task [x] complete, proceed to next task |
-| **Tests fail** | DO NOT proceed. Retry the task or fix inline |
-| **Lint fails** | Fix issues before proceeding |
-| **Typecheck fails** | Fix issues before proceeding |
-
-**Why this matters (per WIGGUM.md):**
-> "Tests, type checks, and lints provide backpressure validation gates"
-> "Backpressure is essential — Tests and validation gates catch errors early"
-
-If validation fails, address the issues before proceeding to the next task. This is non-negotiable.
-
-### Handling Implementation Failures
-
-| Scenario | Action |
-|----------|--------|
-| **Task fails** | Review error, provide feedback to implementer, retry |
-| **Tests fail** | Fix tests or implementation before continuing |
-| **Design problem** | Stop, return to Phase 4 (Design) to revise |
-| **Blocked by dependency** | Verify task ordering in tasks.md |
-| **All complete** | All tasks [x], proceed to Phase 7 (Validate) |
-
-### Orchestrator Role in Phase 6
-
-During Phase 6, you (the orchestrator) are a **coordinator**:
-
-```
-Your responsibilities:
-├── Track which tasks are complete vs. pending
-├── Delegate each task to the implementer agent
-├── Verify validation passes between tasks
-├── Handle failures and blockers
-└── Advance to Phase 7 when all tasks complete
+  prompt: "Complete Task X.Y from docs/stories/<slug>/tasks.md"
 ```
 
 ## Supporting Resources
@@ -490,6 +376,8 @@ Your responsibilities:
 - [Research Checklist](checklists/research-checklist.md)
 - [Design Checklist](checklists/design-checklist.md)
 - [Completion Checklist](checklists/completion-checklist.md)
+- [Requirements Verification Checklist](checklists/requirement-verification-checklist.md) - **Phase 1**
+- [Software Verification Checklist](checklists/software-verification-checklist.md) - **Phase 7**
 
 ### Templates
 Copy to the story directory when needed:
