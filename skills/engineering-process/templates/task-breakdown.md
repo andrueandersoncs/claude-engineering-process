@@ -8,6 +8,18 @@
 **Total Tasks:** [Number]
 **Estimated Effort:** [If applicable]
 
+## Execution Model
+
+**These tasks are executed via the autonomous loop (`loop.sh`).** Each task runs in a FRESH context window to maximize quality.
+
+### Task Sizing Requirements
+- Each task should be completable in a **single fresh context**
+- Touch **no more than 5-10 files** per task
+- Be describable in **<1000 tokens**
+- Make **one logical, testable change**
+
+If a task is too big, split it before starting the loop.
+
 ## Task Legend
 
 - `[ ]` - Not started
@@ -16,6 +28,43 @@
 - `[!]` - Blocked
 
 ## Task List
+
+### Phase 0: Write Failing E2E Tests (MUST BE FIRST)
+
+> **CRITICAL: E2E tests must be written and verified to FAIL before any implementation code.**
+
+#### Task 0.1: [Write E2E test for main user flow]
+
+**Description:** Write end-to-end test that verifies the main acceptance criterion.
+
+**Files:**
+- `tests/e2e/[feature].spec.ts` - Create E2E test file
+
+**Completion Criteria:**
+- [ ] Test exists and documents expected behavior
+- [ ] Test FAILS when run (feature not implemented yet)
+- [ ] Test verifies: [acceptance criterion]
+
+**Verification:**
+```bash
+npx playwright test [feature].spec.ts
+# Expected: FAILED
+```
+
+---
+
+#### Task 0.2: [Write E2E test for error/edge cases]
+
+**Description:** Write E2E tests for error scenarios and edge cases.
+
+**Files:**
+- `tests/e2e/[feature].spec.ts` - Add error scenario tests
+
+**Completion Criteria:**
+- [ ] Tests exist for error scenarios
+- [ ] Tests FAIL when run
+
+---
 
 ### Phase 1: Setup / Foundation
 
@@ -125,6 +174,26 @@
 
 **Completion Criteria:**
 - [ ] [Specific criterion]
+
+---
+
+### Phase 5: Final Verification
+
+#### Task 5.1: Verify all E2E tests pass
+
+**Description:** Run full E2E test suite to verify all acceptance criteria are met.
+
+**Dependencies:** All previous tasks
+
+**Completion Criteria:**
+- [ ] All E2E tests from Phase 0 are GREEN
+- [ ] No regressions in existing tests
+
+**Verification:**
+```bash
+npx playwright test
+# Expected: All tests PASS
+```
 
 ---
 

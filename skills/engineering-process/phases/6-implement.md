@@ -1,14 +1,69 @@
 # Phase 6: Implement
 
 ## Purpose
-Write tests first, then code that makes them pass. Follow the task breakdown using strict TDD: Red → Green → Refactor.
+Write tests first, then code that makes them pass. Execute tasks using the **autonomous loop** for fresh context per task.
 
 **CRITICAL: E2E tests MUST be written and verified to FAIL before any implementation code is written.**
 
-## Agent
-**Delegate to: `implementer`**
+## Execution Model: Autonomous Loop
 
-The implementer agent has full write access and follows the design document with test-first discipline.
+**Phase 6 operates differently from other phases.** Instead of delegating all work to a single agent, this phase uses the **Ralph Wiggum loop pattern**:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  MAIN AGENT BECOMES SCHEDULER - DO NOT DELEGATE ALL TASKS      │
+│                                                                 │
+│  Fresh context per task = 100% smart zone utilization          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Why Loop Mode?
+
+With ~176K usable tokens in a 200K context window:
+- **Single-context approach**: Early tasks get full quality, later tasks degrade as context fills
+- **Loop approach**: Every task gets fresh context, maintaining quality throughout
+
+### Starting the Loop (Agent-Invoked)
+
+**The orchestrator agent automatically invokes the loop when entering this phase.**
+
+When entering Phase 6, the orchestrator runs:
+
+```bash
+"${CLAUDE_PLUGIN_ROOT}/scripts/loop.sh" "<story-slug>"
+```
+
+The user does NOT need to run this manually - the workflow handles it automatically.
+
+#### Loop Options (for manual runs if needed)
+
+```bash
+# Preview without executing (dry run)
+DRY_RUN=1 "${CLAUDE_PLUGIN_ROOT}/scripts/loop.sh" "<story-slug>"
+
+# Skip validation between tasks (faster, riskier)
+SKIP_VALIDATION=1 "${CLAUDE_PLUGIN_ROOT}/scripts/loop.sh" "<story-slug>"
+
+# Limit iterations
+MAX_ITERATIONS=10 "${CLAUDE_PLUGIN_ROOT}/scripts/loop.sh" "<story-slug>"
+```
+
+### Loop Execution Flow
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  1. Parse tasks.md, find next incomplete task                │
+│  2. Mark task as in_progress                                 │
+│  3. Spawn FRESH Claude context with:                         │
+│     - Single task details only                               │
+│     - Relevant context (tasks.md, design.md, research.md)    │
+│  4. Execute ONE task (implementer behavior)                  │
+│  5. Run validation (tests/lint/typecheck as backpressure)    │
+│  6. If PASS: mark task complete, loop to step 1              │
+│  7. If FAIL: leave in_progress, report failure               │
+│  8. Repeat until all tasks complete                          │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ## The Test-First Mandate
 
@@ -24,18 +79,20 @@ The implementer agent has full write access and follows the design document with
 3. **Tests guide design** - Writing tests first leads to better interfaces
 4. **Tests prevent gold-plating** - You only write what's needed to pass
 
-## Activities
+## Pre-Loop Setup
 
-### 1. Setup
-Before writing ANY code:
-- Review the design document
-- Review the task breakdown (which should start with "Write failing E2E test")
-- Understand the acceptance criteria as test scenarios
-- Check existing test patterns for reference
+Before starting the loop:
 
-### 2. Write E2E Tests FIRST (CRITICAL)
+1. **Verify tasks.md exists** with proper structure
+2. **Verify first task(s) are "Write failing E2E test"**
+3. **Review design.md** to understand the approach
+4. **Check test infrastructure** is ready (Playwright, Vitest, etc.)
 
-**This is the FIRST implementation task, before any feature code.**
+## Task Execution (Per-Task Behavior)
+
+Each loop iteration spawns a fresh context that:
+
+### 1. Writes E2E Tests FIRST (if task requires)
 
 ```typescript
 // Example: tests/e2e/user-login.spec.ts
@@ -49,19 +106,9 @@ test('user can log in with valid credentials', async ({ page }) => {
   await expect(page).toHaveURL('/dashboard');
   await expect(page.getByText('Welcome')).toBeVisible();
 });
-
-test('shows error for invalid credentials', async ({ page }) => {
-  await page.goto('/login');
-  await page.getByLabel('Email').fill('user@example.com');
-  await page.getByLabel('Password').fill('wrongpassword');
-  await page.getByRole('button', { name: 'Sign in' }).click();
-  await expect(page.getByText('Invalid credentials')).toBeVisible();
-});
 ```
 
-### 3. Verify Tests FAIL
-
-**CRITICAL: Run the tests and confirm they fail. This is not optional.**
+### 2. Verifies Tests FAIL
 
 ```bash
 npx playwright test user-login.spec.ts
@@ -73,19 +120,15 @@ If tests pass immediately, something is wrong:
 - Test is too vague
 - Feature already exists (verify scope)
 
-### 4. Implement to Make Tests Pass
+### 3. Implements to Make Tests Pass
 
-**Only now do you write implementation code.**
-
-For each implementation task:
+Write the **minimum code** to make the test pass:
 1. Read the failing test to understand what's needed
-2. Write the **minimum code** to make the test pass
+2. Implement only what's required
 3. Run the test to verify it passes
-4. Refactor if needed while keeping tests green
-5. Commit with clear message
-6. Mark task complete
+4. Commit with clear message
 
-### 5. The Red-Green-Refactor Cycle
+### 4. The Red-Green-Refactor Cycle
 
 ```
 ┌─────────────────────────────────────────────────┐
@@ -95,81 +138,30 @@ For each implementation task:
 │       ↓                                         │
 │  REFACTOR: Clean up while staying green         │
 │       ↓                                         │
-│  REPEAT for next feature                        │
+│  COMMIT: Clear message referencing task         │
 └─────────────────────────────────────────────────┘
 ```
 
-### 6. Unit Tests During Implementation
+## Validation as Backpressure
 
-Write unit tests for complex logic as you implement:
-- Business logic functions
-- Validation rules
-- Data transformations
-- Edge cases
+After each task, the loop runs validation:
 
-```typescript
-// Example: src/__tests__/auth.test.ts
-import { describe, it, expect } from 'vitest';
-import { validateCredentials } from '../auth';
-
-describe('validateCredentials', () => {
-  it('returns true for valid email and password', () => {
-    expect(validateCredentials('user@example.com', 'password123')).toBe(true);
-  });
-
-  it('returns false for empty email', () => {
-    expect(validateCredentials('', 'password123')).toBe(false);
-  });
-
-  it('returns false for invalid email format', () => {
-    expect(validateCredentials('notanemail', 'password123')).toBe(false);
-  });
-});
+```bash
+# Auto-detected by run-validation.sh:
+- npm test / yarn test / pnpm test
+- npm run lint / eslint
+- npm run typecheck / tsc --noEmit
 ```
 
-### 7. Code Quality
-Maintain quality throughout:
-- Follow project conventions
-- Handle errors appropriately
-- Add logging where useful
-- No hardcoded secrets or magic values
+**Validation failures block progress.** The task remains `in_progress` until:
+- The issue is fixed
+- The loop is re-run
 
-### 8. Progress Tracking
-Keep the task breakdown updated:
-- Mark tasks as complete
-- Note any deviations from design
-- Flag blockers immediately
-- **Track which tests are now passing**
+This creates **downstream backpressure** - invalid work is rejected automatically.
 
-## Delegation to Implementer Agent
+## Implementation Order
 
-```
-Delegate to implementer agent:
-
-Context: Implementation phase for [feature description]
-
-Design document: docs/design-[feature].md
-Task breakdown: docs/tasks-[feature].md
-
-CRITICAL TEST-FIRST INSTRUCTIONS:
-1. If E2E tests don't exist yet, write them FIRST
-2. Run tests to verify they FAIL
-3. Only then proceed with implementation
-4. Run tests after each change to verify progress
-
-Current task: [Task X.Y - Title]
-
-Instructions:
-- Follow the design document
-- Write failing tests first (if not already done)
-- Implement task X.Y to make tests pass
-- Update task breakdown when complete
-- Commit with conventional commit message
-```
-
-## Implementation Order (Test-First)
-
-Follow this strict order:
+Tasks should follow this order (enforced by task dependencies):
 
 ```
 0. Write E2E tests (MUST BE FIRST)
@@ -188,6 +180,40 @@ Follow this strict order:
 6. Integration / Wiring
    ↓
 7. Verify all E2E tests PASS
+```
+
+## Handling Loop Failures
+
+### Task Execution Failed
+```
+1. Loop leaves task as in_progress
+2. Review the error output
+3. Fix the issue manually or adjust task scope
+4. Re-run the loop
+```
+
+### Validation Failed
+```
+1. Tests/lint failed after implementation
+2. Task remains in_progress
+3. Fix the failing tests or lint issues
+4. Re-run the loop (it will retry the same task)
+```
+
+### Design Doesn't Work
+```
+1. Stop the loop (Ctrl+C)
+2. Document the issue in tasks.md or design.md
+3. Return to design phase if needed: /engineering-process:phase design
+4. Regenerate tasks if design changed significantly
+```
+
+### Blocked by Dependencies
+```
+1. Check if task dependencies are properly marked
+2. Verify blocking tasks are complete
+3. If circular dependency: refactor tasks.md
+4. Re-run the loop
 ```
 
 ## Commit Guidelines
@@ -211,72 +237,59 @@ Longer explanation if needed.
 - `chore`: Maintenance tasks
 
 ### Frequency
-- Commit after each logical unit of work
-- Don't batch unrelated changes
+- One commit per task (loop handles this naturally)
 - Each commit should build/test successfully
 
-## Quality Checklist
+## Quality Checklist (Per Task)
 
-For each task:
-- [ ] **E2E test was written FIRST and verified to FAIL**
+Each task completion requires:
+- [ ] **E2E test written FIRST and verified to FAIL** (if applicable)
 - [ ] **E2E test now PASSES after implementation**
 - [ ] Implementation matches design
 - [ ] Unit tests cover complex logic
 - [ ] All tests pass locally
 - [ ] No linting errors
 - [ ] No type errors
-- [ ] Error handling is appropriate
-- [ ] No hardcoded values
 - [ ] Follows project conventions
 
-## Handling Issues
+## Loop Completion
 
-### Design Doesn't Work
-```
-1. Stop implementation
-2. Document the issue:
-   - What was attempted
-   - Why it doesn't work
-   - Proposed alternatives
-3. Return to design phase or escalate
-```
+The loop exits when:
+- All tasks in tasks.md are marked `[x]` complete
+- Or MAX_ITERATIONS reached (safety limit)
 
-### Unexpected Complexity
+### Success Output
 ```
-1. Assess if within scope
-2. If minor: proceed and note it
-3. If major: pause and discuss
-4. Update task breakdown if needed
-```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[INFO] Loop Summary
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Iterations: 8
+  Completed:  8
+  Failed:     0
 
-### Blocked by Dependencies
-```
-1. Document the blocker
-2. Check if workaround exists
-3. If not: flag and work on unblocked tasks
-4. Escalate if blocking all progress
+[SUCCESS] All tasks completed! Ready for validation phase.
+[INFO] Run '/engineering-process:phase validate' to proceed.
 ```
 
 ## Output
 
-- **E2E tests that verify the feature works**
-- Implemented code that makes tests pass
-- Unit tests for complex logic
-- Updated task breakdown (tasks marked complete)
+After loop completion:
+- **All E2E tests passing**
+- All implementation tasks complete
+- All unit tests passing
 - Commit history with clear messages
-- Notes on any deviations or issues
+- tasks.md fully marked complete
 
 ## Completion Criteria
 
+- [ ] **CRITICAL: Loop completed successfully (all tasks done)**
 - [ ] **CRITICAL: All E2E tests pass**
 - [ ] **CRITICAL: Tests were written BEFORE implementation**
-- [ ] All tasks in breakdown are complete
+- [ ] All tasks in breakdown are complete (`[x]`)
 - [ ] All unit tests pass
 - [ ] No linting errors
 - [ ] Code follows project conventions
 - [ ] All commits have clear messages
-- [ ] Task breakdown reflects completion
-- [ ] Any deviations from design are documented
 
 ## Next Phase
-Proceed to [Phase 7: Validate](7-validate.md) when criteria are met.
+Proceed to [Phase 7: Validate](7-validate.md) when the loop completes successfully.

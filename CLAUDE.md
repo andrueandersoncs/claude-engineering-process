@@ -36,9 +36,33 @@ The plugin is documentation-driven (Markdown + JSON + Bash scripts) with no comp
 3. **Scope** - Define boundaries → define test scope
 4. **Design** - Architect creates design → design test architecture
 5. **Decompose** - Break into tasks → each task references required tests
-6. **Implement** - **Write E2E tests FIRST, then implement** (Red→Green→Refactor)
+6. **Implement** - **LOOP MODE: Fresh context per task** (Red→Green→Refactor)
 7. **Validate** - Reviewer verifies quality → verify test coverage
 8. **Deploy** - Release and monitor → run full test suite before/after
+
+### CRITICAL: Phase 6 Uses Autonomous Loop Mode
+
+Phase 6 (Implement) operates differently from other phases. Instead of delegating all tasks to a single agent context, the orchestrator **automatically invokes** the autonomous loop:
+
+```bash
+# The orchestrator runs this automatically when entering Phase 6
+"${CLAUDE_PLUGIN_ROOT}/scripts/loop.sh" "<story-slug>"
+```
+
+**Users don't need to run this manually** - the workflow handles it.
+
+**Why Loop Mode?**
+- Fresh context per task = 100% "smart zone" utilization
+- Single-context approach degrades quality as context fills
+- Each task gets full model capacity, maintaining quality throughout
+
+The loop:
+1. Parses `tasks.md`, finds next incomplete task
+2. Spawns FRESH Claude context with single task
+3. Executes ONE task only
+4. Runs validation (tests/lint)
+5. Marks complete if validation passes
+6. Repeats until all tasks done
 
 ### Agent Tool Access
 
@@ -87,4 +111,8 @@ ln -s /path/to/claude-engineering-process ~/.claude/plugins/engineering-process
 - `.claude-plugin/plugin.json` - Plugin manifest
 - `skills/engineering-process/SKILL.md` - Central orchestrator
 - `hooks/hooks.json` - Hook configuration for phase gates
+- `scripts/loop.sh` - **Autonomous implementation loop** (Phase 6)
 - `scripts/phase-gate.sh` - Phase transition validation
+- `scripts/next-task.sh` - Extract next task from tasks.md
+- `scripts/mark-complete.sh` - Update task status
+- `scripts/run-validation.sh` - Run tests/lint validation
