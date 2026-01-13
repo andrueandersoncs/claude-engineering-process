@@ -1,68 +1,70 @@
 # Phase 6: Implement
 
 ## Purpose
-Write tests first, then code that makes them pass. Execute tasks using the **autonomous loop** for fresh context per task.
+Write tests first, then code that makes them pass. Execute tasks using **iterative delegation** to the implementer agent.
 
 **CRITICAL: E2E tests MUST be written and verified to FAIL before any implementation code is written.**
 
-## Execution Model: Autonomous Loop
+## Execution Model: Iterative Task Delegation
 
-**Phase 6 operates differently from other phases.** Instead of delegating all work to a single agent, this phase uses the **Ralph Wiggum loop pattern**:
+**Phase 6 uses per-task delegation to the implementer agent.** Each task gets its own focused context.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  MAIN AGENT BECOMES SCHEDULER - DO NOT DELEGATE ALL TASKS      │
+│  ORCHESTRATOR COORDINATES - IMPLEMENTER EXECUTES               │
 │                                                                 │
-│  Fresh context per task = 100% smart zone utilization          │
+│  Fresh context per task = consistent quality throughout        │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Why Loop Mode?
+### Why Per-Task Delegation?
 
-With ~176K usable tokens in a 200K context window:
-- **Single-context approach**: Early tasks get full quality, later tasks degrade as context fills
-- **Loop approach**: Every task gets fresh context, maintaining quality throughout
+By delegating each task separately:
+- **Each task gets focused context** - only the relevant task details, not accumulated state
+- **Quality remains consistent** - no context degradation across tasks
+- **Failures are isolated** - one task's issues don't pollute the next
 
-### Starting the Loop (Agent-Invoked)
+### Implementation Flow
 
-**The orchestrator agent automatically invokes the loop when entering this phase.**
-
-When entering Phase 6, the orchestrator runs:
-
-```bash
-"${CLAUDE_PLUGIN_ROOT}/scripts/loop.sh" "<story-slug>"
-```
-
-The user does NOT need to run this manually - the workflow handles it automatically.
-
-#### Loop Options (for manual runs if needed)
-
-```bash
-# Preview without executing (dry run)
-DRY_RUN=1 "${CLAUDE_PLUGIN_ROOT}/scripts/loop.sh" "<story-slug>"
-
-# Skip validation between tasks (faster, riskier)
-SKIP_VALIDATION=1 "${CLAUDE_PLUGIN_ROOT}/scripts/loop.sh" "<story-slug>"
-
-# Limit iterations
-MAX_ITERATIONS=10 "${CLAUDE_PLUGIN_ROOT}/scripts/loop.sh" "<story-slug>"
-```
-
-### Loop Execution Flow
+When entering Phase 6, the orchestrator follows this sequence:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  1. Parse tasks.md, find next incomplete task                │
-│  2. Mark task as in_progress                                 │
-│  3. Spawn FRESH Claude context with:                         │
-│     - Single task details only                               │
-│     - Relevant context (tasks.md, design.md, research.md)    │
-│  4. Execute ONE task (implementer behavior)                  │
-│  5. Run validation (tests/lint/typecheck as backpressure)    │
-│  6. If PASS: mark task complete, loop to step 1              │
-│  7. If FAIL: leave in_progress, report failure               │
-│  8. Repeat until all tasks complete                          │
+│  1. Read tasks.md to find the next incomplete task [ ]       │
+│  2. Delegate to implementer agent with task context          │
+│  3. Wait for implementer to complete the task                │
+│  4. Run validation (tests/lint/typecheck)                    │
+│  5. If PASS: verify task marked [x], proceed to step 1       │
+│  6. If FAIL: address the failure before continuing           │
+│  7. Repeat until all tasks are marked [x] complete           │
 └──────────────────────────────────────────────────────────────┘
+```
+
+### Task Delegation
+
+For each incomplete task, delegate using the Task tool:
+
+```
+Task tool:
+  subagent_type: "implementer"
+  prompt: |
+    ## Your Task
+    Complete Task X.Y: [task title from tasks.md]
+
+    ## Task Details
+    [Copy the full task description]
+
+    ## Context Files
+    - Design: docs/stories/<slug>/design.md
+    - Research: docs/stories/<slug>/research-notes.md
+    - Tasks: docs/stories/<slug>/tasks.md
+
+    ## TDD Requirements
+    1. Write the failing test FIRST
+    2. Run tests to verify failure
+    3. Implement minimum code to pass
+    4. Run tests to verify success
+    5. Mark task [x] complete in tasks.md
 ```
 
 ## The Test-First Mandate
@@ -144,20 +146,21 @@ Write the **minimum code** to make the test pass:
 
 ## Validation as Backpressure
 
-After each task, the loop runs validation:
+After each task, run validation to verify the implementation:
 
 ```bash
-# Auto-detected by run-validation.sh:
-- npm test / yarn test / pnpm test
-- npm run lint / eslint
-- npm run typecheck / tsc --noEmit
+# Run the project's test/lint/typecheck commands:
+npm test        # or yarn test, pnpm test
+npm run lint    # if configured
+npm run typecheck  # if configured (e.g., tsc --noEmit)
 ```
 
-**Validation failures block progress.** The task remains `in_progress` until:
-- The issue is fixed
-- The loop is re-run
+**Validation failures block progress.** Do not proceed to the next task until:
+- All tests pass
+- Linting passes
+- Type checking passes
 
-This creates **downstream backpressure** - invalid work is rejected automatically.
+This creates **downstream backpressure** - invalid work is caught before proceeding.
 
 ## Implementation Order
 
@@ -182,38 +185,67 @@ Tasks should follow this order (enforced by task dependencies):
 7. Verify all E2E tests PASS
 ```
 
-## Handling Loop Failures
+## Handling Failures
 
 ### Task Execution Failed
 ```
-1. Loop leaves task as in_progress
-2. Review the error output
-3. Fix the issue manually or adjust task scope
-4. Re-run the loop
+1. Review the error output from the implementer
+2. Identify the root cause
+3. Provide feedback and retry the task delegation
+4. Or fix the issue manually and mark task complete
 ```
 
 ### Validation Failed
 ```
 1. Tests/lint failed after implementation
-2. Task remains in_progress
+2. Do NOT proceed to the next task
 3. Fix the failing tests or lint issues
-4. Re-run the loop (it will retry the same task)
+4. Re-run validation until it passes
 ```
 
 ### Design Doesn't Work
 ```
-1. Stop the loop (Ctrl+C)
+1. Stop implementation
 2. Document the issue in tasks.md or design.md
-3. Return to design phase if needed: /engineering-process:phase design
+3. Return to design phase: /engineering-process:phase design
 4. Regenerate tasks if design changed significantly
+```
+
+### Deeper Issues: Regression Beyond Design
+
+**Plans are disposable.** Sometimes implementation reveals issues that go deeper than design:
+
+| Finding | Regress To | Why |
+|---------|------------|-----|
+| Test can't be written because **requirement is unclear** | **Phase 1 (Understand)** | Need user clarification |
+| Implementation reveals **wrong assumptions** about what user wants | **Phase 1 (Understand)** | Understanding was flawed |
+| **Scope explosion** (10x+ what was expected) | **Phase 1 (Understand)** | User must approve expanded scope |
+| Design was based on **incorrect research** | **Phase 2 (Research)** | Re-investigate codebase |
+
+**The disciplined response**: When discoveries contradict assumptions, stop and reassess rather than hack around obstacles. One planning loop is cheaper than spiraling.
+
+```markdown
+## Example: Implementation Regression
+
+**Task**: Implement user preferences API
+**Problem**: Can't write test because we don't know where preferences are stored
+
+**Investigation**: Research notes assumed a `preferences` table exists.
+**Reality**: Preferences are in Redis with 24h TTL (discovered at src/cache/user.ts:34)
+
+**Impact**: Original requirement "persistent preferences" can't work with existing system.
+
+**Decision**: Regress to Phase 1 to clarify with user:
+- Option A: Accept 24h TTL (minimal change)
+- Option B: Add database storage (scope expansion)
 ```
 
 ### Blocked by Dependencies
 ```
-1. Check if task dependencies are properly marked
+1. Check if task dependencies are properly marked in tasks.md
 2. Verify blocking tasks are complete
 3. If circular dependency: refactor tasks.md
-4. Re-run the loop
+4. Continue with the corrected task order
 ```
 
 ## Commit Guidelines
@@ -237,7 +269,7 @@ Longer explanation if needed.
 - `chore`: Maintenance tasks
 
 ### Frequency
-- One commit per task (loop handles this naturally)
+- One commit per task
 - Each commit should build/test successfully
 
 ## Quality Checklist (Per Task)
@@ -252,44 +284,30 @@ Each task completion requires:
 - [ ] No type errors
 - [ ] Follows project conventions
 
-## Loop Completion
+## Phase Completion
 
-The loop exits when:
+Phase 6 is complete when:
 - All tasks in tasks.md are marked `[x]` complete
-- Or MAX_ITERATIONS reached (safety limit)
-
-### Success Output
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[INFO] Loop Summary
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  Iterations: 8
-  Completed:  8
-  Failed:     0
-
-[SUCCESS] All tasks completed! Ready for validation phase.
-[INFO] Run '/engineering-process:phase validate' to proceed.
-```
+- All validation passes (tests, lint, typecheck)
 
 ## Output
 
-After loop completion:
+After implementation is complete:
 - **All E2E tests passing**
-- All implementation tasks complete
+- All implementation tasks marked `[x]` complete
 - All unit tests passing
-- Commit history with clear messages
+- Commit history with clear messages per task
 - tasks.md fully marked complete
 
 ## Completion Criteria
 
-- [ ] **CRITICAL: Loop completed successfully (all tasks done)**
+- [ ] **CRITICAL: All tasks complete** (all marked `[x]` in tasks.md)
 - [ ] **CRITICAL: All E2E tests pass**
 - [ ] **CRITICAL: Tests were written BEFORE implementation**
-- [ ] All tasks in breakdown are complete (`[x]`)
 - [ ] All unit tests pass
 - [ ] No linting errors
 - [ ] Code follows project conventions
 - [ ] All commits have clear messages
 
 ## Next Phase
-Proceed to [Phase 7: Validate](7-validate.md) when the loop completes successfully.
+Proceed to [Phase 7: Validate](7-validate.md) when all tasks are complete and validation passes.

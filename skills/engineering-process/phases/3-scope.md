@@ -35,7 +35,7 @@ This phase uses the `scope-analyst` agent to classify scope items:
 
 ```
 Task tool call:
-  subagent_type: "engineering-process:scope-analyst"
+  subagent_type: "scope-analyst"
   prompt: |
     Analyze the proposed scope for [feature name].
 

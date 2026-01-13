@@ -19,7 +19,7 @@ This agent is **optional** and used for **QA/testing purposes** when:
 **Invocation:**
 ```
 Task tool call:
-  subagent_type: "engineering-process:adversary"
+  subagent_type: "adversary"
   prompt: |
     Test the requirement verification pipeline.
 

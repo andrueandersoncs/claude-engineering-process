@@ -17,7 +17,7 @@ This agent is **optional** and used during **Phase 4 (Design)** when:
 **Invocation:**
 ```
 Task tool call:
-  subagent_type: "engineering-process:decision-maker"
+  subagent_type: "decision-maker"
   prompt: |
     Evaluate options for [technical decision].
 

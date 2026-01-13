@@ -12,10 +12,12 @@ Validate that the current phase is complete and ready to proceed to the next pha
 
 ### 1. Load Workflow State
 
-Read `.claude/workflow-state.json` to determine:
+Read `docs/stories/<story-slug>/workflow-state.json` to determine:
 - Current phase
 - Completed phases
 - Expected artifacts
+
+> **Note**: The `<story-slug>` is derived from the story title or issue number. Use the most recent story directory if not specified.
 
 ### 2. Phase-Specific Validation
 

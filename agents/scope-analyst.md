@@ -1,12 +1,10 @@
 ---
+name: scope-analyst
 description: Analyze and auto-determine safe scope boundaries for features. Can auto-approve scope when changes are strictly additive and match established patterns. Escalates to user for scope reductions or novel changes.
-mode: subagent
-model: anthropic/claude-sonnet-4-20250514
-temperature: 0.2
-tools:
-  edit: false
-  bash: false
-  write: false
+tools: Read, Grep, Glob
+disallowedTools: Write, Edit, Bash
+model: sonnet
+permissionMode: plan
 ---
 
 # Scope Analyst Agent

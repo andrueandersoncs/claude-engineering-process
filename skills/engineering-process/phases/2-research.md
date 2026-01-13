@@ -171,12 +171,87 @@ Encode requirements and codebase constraints as logical statements:
 - [ ] **CRITICAL: Test commands identified and verified**
 - [ ] **CRITICAL: Existing test patterns documented with examples**
 
+### Blocking Conditions (Cannot Proceed)
+
+**DO NOT advance to Phase 3 if any of these are true:**
+- [ ] Critical assumption was refuted and requires user input
+- [ ] Impossibility discovered that changes what user asked for
+- [ ] Scope explosion (5x+) that user hasn't approved
+- [ ] Missing business logic that only user can provide
+
+**If any blocking condition is true**: Present findings to user and wait for decision. See "Phase Regression" section below.
+
+## Phase Regression: When Research Contradicts Understanding
+
+**Critical principle from the Ralph Playbook**: Plans are disposable. When trajectories diverge, regenerating costs one loop—far cheaper than spiraling.
+
+### When to Regress to Phase 1
+
+Return to Phase 1 (Understand) when research reveals:
+
+| Finding | Action |
+|---------|--------|
+| **Assumption refuted** - core requirement can't work as assumed | REGRESS: User must confirm revised understanding |
+| **Impossibility discovered** - requested feature fundamentally conflicts with codebase | REGRESS: User must choose alternative approach |
+| **Scope explosion** - implementation is 5x+ larger than implied | REGRESS: User must confirm expanded scope |
+| **Missing context** - critical business logic was unstated | REGRESS: User must provide missing requirements |
+
+### How to Handle Regression
+
+When a critical contradiction is found:
+
+1. **Document the contradiction** in research notes with evidence (file:line references)
+2. **Do NOT auto-advance** to Phase 3
+3. **Present to user** with:
+   - What was assumed
+   - What was actually found
+   - Why this changes the picture
+   - Proposed alternatives (if any)
+4. **Wait for user decision** before proceeding
+5. **Update workflow state** if returning to Phase 1:
+   ```json
+   {
+     "currentPhase": "understand",
+     "regressionReason": "Assumption X refuted - see research-notes.md",
+     "regressionFrom": "research"
+   }
+   ```
+
+### Example Regression Scenario
+
+```markdown
+## Critical Finding: Regression Required
+
+**Original Assumption**: "Users have a `preferences` table we can extend"
+
+**Actual Finding**: No `preferences` table exists. User settings are stored
+in a Redis cache with 24h TTL (see `src/services/settings.ts:45-67`).
+
+**Impact**: Cannot implement persistent preferences without either:
+1. Creating new database table (larger scope)
+2. Using existing Redis approach (loses data after 24h)
+
+**Recommendation**: Return to Phase 1 to clarify requirements with user.
+
+**Blocking**: YES - cannot proceed to Scope without user decision.
+```
+
+### When NOT to Regress
+
+Stay in Phase 2 and continue when:
+- Minor assumption corrections that don't change scope
+- Pattern differences that can be adapted to
+- Technical choices that have clear alternatives
+
+**Rule of thumb**: If you can resolve it without changing what the user asked for, stay in Research. If the user's request itself needs to change, regress.
+
 ## Common Pitfalls
 
 1. **Shallow Search** - Only looking at obvious locations
 2. **Pattern Ignorance** - Not studying how similar features work
 3. **Assumption Persistence** - Keeping assumptions despite contradicting evidence
 4. **Over-Research** - Exploring beyond what's needed for the task
+5. **Regression Avoidance** - Proceeding despite critical contradictions to "save time"
 
 ## Next Phase
-Proceed to [Phase 3: Scope](3-scope.md) when criteria are met.
+Proceed to [Phase 3: Scope](3-scope.md) when criteria are met AND no critical contradictions require user input.

@@ -26,6 +26,7 @@ STORIES_DIR="docs/stories"
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Read stdin for hook input (if provided)
@@ -181,26 +182,28 @@ case "$ACTION" in
 
     "pre-write")
         # Validate before write/edit operations
+        # Set PHASE_GATE_WARN_ONLY=1 to get warnings without blocking
 
         # Block writes during understand phase
         if [ "$CURRENT_PHASE" = "understand" ]; then
             echo "Phase gate: In 'understand' phase - file modifications not expected yet." >&2
             echo "Tip: Complete requirements analysis before modifying files." >&2
-            # Warning only, don't block
-            exit 0
+            [ "${PHASE_GATE_WARN_ONLY:-0}" = "1" ] && exit 0
+            exit 1
         fi
 
         # Block writes during research phase (explorer agent should be read-only)
         if [ "$CURRENT_PHASE" = "research" ]; then
             echo "Phase gate: In 'research' phase - file modifications should wait." >&2
             echo "Tip: Complete research and move to design phase first." >&2
-            # Warning only, don't block
-            exit 0
+            [ "${PHASE_GATE_WARN_ONLY:-0}" = "1" ] && exit 0
+            exit 1
         fi
 
-        # Warn if writing during scope phase
+        # Warn if writing during scope phase (allow with warning)
         if [ "$CURRENT_PHASE" = "scope" ]; then
             echo "Phase gate: In 'scope' phase - ensure scope is defined before implementing." >&2
+            # Scope phase allows writes (for scope document) - just warn
             exit 0
         fi
 
@@ -210,8 +213,8 @@ case "$ACTION" in
             if [ ! -f "$DESIGN_DOC" ]; then
                 echo "Phase gate: Design document not found at: $DESIGN_DOC" >&2
                 echo "Tip: Complete the design phase before implementing." >&2
-                # Warning only
-                exit 0
+                [ "${PHASE_GATE_WARN_ONLY:-0}" = "1" ] && exit 0
+                exit 1
             fi
         fi
 

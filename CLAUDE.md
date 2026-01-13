@@ -36,33 +36,25 @@ The plugin is documentation-driven (Markdown + JSON + Bash scripts) with no comp
 3. **Scope** - Define boundaries → define test scope
 4. **Design** - Architect creates design → design test architecture
 5. **Decompose** - Break into tasks → each task references required tests
-6. **Implement** - **LOOP MODE: Fresh context per task** (Red→Green→Refactor)
+6. **Implement** - **Iterative task delegation** (Red→Green→Refactor per task)
 7. **Validate** - Reviewer verifies quality → verify test coverage
 8. **Deploy** - Release and monitor → run full test suite before/after
 
-### CRITICAL: Phase 6 Uses Autonomous Loop Mode
+### Phase 6: Iterative Task Delegation
 
-Phase 6 (Implement) operates differently from other phases. Instead of delegating all tasks to a single agent context, the orchestrator **automatically invokes** the autonomous loop:
+Phase 6 (Implement) uses **per-task delegation** to the implementer agent. The orchestrator:
 
-```bash
-# The orchestrator runs this automatically when entering Phase 6
-"${CLAUDE_PLUGIN_ROOT}/scripts/loop.sh" "<story-slug>"
-```
-
-**Users don't need to run this manually** - the workflow handles it.
-
-**Why Loop Mode?**
-- Fresh context per task = 100% "smart zone" utilization
-- Single-context approach degrades quality as context fills
-- Each task gets full model capacity, maintaining quality throughout
-
-The loop:
-1. Parses `tasks.md`, finds next incomplete task
-2. Spawns FRESH Claude context with single task
-3. Executes ONE task only
+1. Reads `tasks.md` to find the next incomplete task
+2. Delegates to the `implementer` agent with task context
+3. Waits for task completion
 4. Runs validation (tests/lint)
-5. Marks complete if validation passes
+5. Marks task complete if validation passes
 6. Repeats until all tasks done
+
+**Why per-task delegation?**
+- Fresh context per task = consistent quality throughout
+- Each task gets focused context without accumulated state
+- Failures are isolated - one task's issues don't pollute the next
 
 ### Agent Tool Access
 
@@ -110,9 +102,11 @@ ln -s /path/to/claude-engineering-process ~/.claude/plugins/engineering-process
 
 - `.claude-plugin/plugin.json` - Plugin manifest
 - `skills/engineering-process/SKILL.md` - Central orchestrator
-- `hooks/hooks.json` - Hook configuration for phase gates
-- `scripts/loop.sh` - **Autonomous implementation loop** (Phase 6)
+- `agents/` - Specialized agents (explorer, architect, implementer, reviewer, etc.)
+- `hooks/hooks.json` - Hook configuration for phase gates (requires project setup)
 - `scripts/phase-gate.sh` - Phase transition validation
-- `scripts/next-task.sh` - Extract next task from tasks.md
-- `scripts/mark-complete.sh` - Update task status
 - `scripts/run-validation.sh` - Run tests/lint validation
+
+## Hooks Setup
+
+The hooks require validation scripts to be installed in your project. See `hooks/SETUP.md` for installation instructions.

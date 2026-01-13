@@ -98,6 +98,36 @@ build_prompt() {
     local task_criteria="$5"
     local story_dir="$6"
 
+    # Read context files if they exist
+    local tasks_content=""
+    local design_content=""
+    local research_content=""
+    local additional_content=""
+
+    if [ -f "$story_dir/tasks.md" ]; then
+        tasks_content=$(cat "$story_dir/tasks.md")
+    fi
+    if [ -f "$story_dir/design.md" ]; then
+        design_content=$(cat "$story_dir/design.md")
+    fi
+    if [ -f "$story_dir/research-notes.md" ]; then
+        research_content=$(cat "$story_dir/research-notes.md")
+    fi
+
+    # Add any additional context files from CONTEXT_FILES env var
+    if [ -n "$CONTEXT_FILES" ]; then
+        for cf in $CONTEXT_FILES; do
+            if [ -f "$cf" ]; then
+                additional_content+="
+### File: $cf
+\`\`\`
+$(cat "$cf")
+\`\`\`
+"
+            fi
+        done
+    fi
+
     cat <<EOF
 # Autonomous Implementation Task
 
@@ -121,13 +151,26 @@ $task_criteria
 3. Ensure all existing tests still pass
 4. When complete, the task criteria above should all be satisfied
 
-## Context Files
+## Context
 
-The following files have been loaded for context:
-- Task breakdown: $story_dir/tasks.md
-- Design document: $story_dir/design.md (if exists)
-- Research notes: $story_dir/research-notes.md (if exists)
+### Task Breakdown ($story_dir/tasks.md)
+\`\`\`markdown
+$tasks_content
+\`\`\`
 
+${design_content:+### Design Document ($story_dir/design.md)
+\`\`\`markdown
+$design_content
+\`\`\`
+}
+${research_content:+### Research Notes ($story_dir/research-notes.md)
+\`\`\`markdown
+$research_content
+\`\`\`
+}
+${additional_content:+### Additional Context Files
+$additional_content
+}
 ## After Completion
 
 When you've completed the task:
@@ -213,35 +256,23 @@ main() {
         # Mark task as in-progress
         "$SCRIPT_DIR/mark-complete.sh" "$tasks_file" "$task_id" "in_progress"
 
-        # Build prompt
+        # Build prompt (now includes context files embedded directly)
         local prompt
         prompt=$(build_prompt "$task_id" "$task_title" "$task_description" "$task_files" "$task_criteria" "$story_dir")
 
-        # Build context file list
-        local context_args=()
-        context_args+=("--print" "$tasks_file")
-        [ -f "$story_dir/design.md" ] && context_args+=("--print" "$story_dir/design.md")
-        [ -f "$story_dir/research-notes.md" ] && context_args+=("--print" "$story_dir/research-notes.md")
-
-        # Add any additional context files
-        if [ -n "$CONTEXT_FILES" ]; then
-            for cf in $CONTEXT_FILES; do
-                [ -f "$cf" ] && context_args+=("--print" "$cf")
-            done
-        fi
-
         if [ "$DRY_RUN" = "1" ]; then
             log_info "[DRY RUN] Would execute:"
-            echo "$CLAUDE_BIN ${context_args[*]} --prompt \"...\""
+            echo "$CLAUDE_BIN -p \"[prompt with embedded context]\""
             "$SCRIPT_DIR/mark-complete.sh" "$tasks_file" "$task_id" "complete"
             completed=$((completed + 1))
             continue
         fi
 
         # Execute Claude with fresh context
+        # Using -p flag for non-interactive mode with the prompt containing all context
         log_info "Spawning fresh Claude context..."
 
-        if $CLAUDE_BIN "${context_args[@]}" --prompt "$prompt"; then
+        if $CLAUDE_BIN -p "$prompt"; then
             log_success "Task execution completed"
 
             # Run validation if not skipped

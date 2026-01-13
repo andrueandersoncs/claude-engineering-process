@@ -1,22 +1,10 @@
 ---
-description: Programmatically validate phase completion criteria and auto-advance workflow when all checks pass. Use at phase boundaries to reduce manual checkpoint overhead.
-mode: subagent
-model: anthropic/claude-sonnet-4-20250514
-temperature: 0.1
-tools:
-  write: false
-  edit: false
-permission:
-  bash:
-    "npm test": allow
-    "npm run test": allow
-    "npx vitest": allow
-    "npx playwright test": allow
-    "npm run lint": allow
-    "npm run typecheck": allow
-    "ls": allow
-    "cat": allow
-    "test -f": allow
+name: validator
+description: Programmatically validate phase completion criteria and auto-advance workflow when all checks pass. Use at phase boundaries to reduce manual checkpoint overhead. Runs tests and verifies artifacts exist.
+tools: Read, Grep, Glob, Bash
+disallowedTools: Write, Edit
+model: sonnet
+permissionMode: dontAsk
 ---
 
 # Validator Agent

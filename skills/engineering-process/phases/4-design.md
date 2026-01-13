@@ -214,12 +214,51 @@ Before finalizing:
 - [ ] **E2E test scenarios are defined**
 - [ ] **Test infrastructure needs are identified**
 
+## Phase Regression: When Design Reveals Deeper Issues
+
+**Plans are disposable.** If design simulation or risk assessment reveals fundamental problems, don't patch forward—regress.
+
+### When to Regress from Design
+
+| Finding | Regress To | Why |
+|---------|------------|-----|
+| Simulation stuck on **unclear requirement** | **Phase 1 (Understand)** | Need user clarification on what they actually want |
+| Technical **impossibility** discovered | **Phase 1 (Understand)** | User must choose alternative approach |
+| **Scope mismatch** with research findings | **Phase 3 (Scope)** | Boundaries were wrong |
+| Need **more codebase investigation** | **Phase 2 (Research)** | Research incomplete |
+
+### How to Handle Design Regression
+
+1. **Stop designing** — Don't try to design around fundamental issues
+2. **Document the blocker** in design.md under "## Design Blockers"
+3. **Identify the root cause** — Is it understanding, scope, or research?
+4. **Present to user** with evidence and alternatives
+5. **Wait for decision** before proceeding
+
+### Example: Design Reveals Requirement Gap
+
+```markdown
+## Design Blocker: Regression Required
+
+**Issue**: Design simulation stuck at "user selects payment method"
+- Research found existing checkout flow (checkout.ts:45-89)
+- BUT: No payment provider is configured in the system
+- This was not in scope—assumed payment was already available
+
+**Options**:
+1. Add payment integration (10x scope increase) → Regress to Phase 1
+2. Skip payment, manual invoicing only → Regress to Phase 3 to adjust scope
+
+**Recommendation**: Clarify with user which option they prefer.
+```
+
 ## Common Pitfalls
 
 1. **Over-Engineering** - Building for requirements that don't exist
 2. **Under-Specification** - Leaving critical details undefined
 3. **Pattern Mismatch** - Using patterns that don't fit the codebase
 4. **Missing Rationale** - Documenting "what" but not "why"
+5. **Regression Avoidance** - Trying to design around fundamental issues instead of looping back
 
 ## Next Phase
-Proceed to [Phase 5: Decompose](5-decompose.md) when criteria are met.
+Proceed to [Phase 5: Decompose](5-decompose.md) when criteria are met AND no design blockers require regression.

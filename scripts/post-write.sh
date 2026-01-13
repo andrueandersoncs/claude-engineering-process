@@ -3,14 +3,18 @@
 # Post-Write Hook Script
 # Runs after file write/edit operations
 #
-# Can be extended to:
-# - Run linters/formatters
-# - Update documentation
-# - Trigger builds
-# - Log changes
+# Provides downstream backpressure per WIGGUM.md:
+#   "Tests, type checks, and lints provide backpressure validation gates"
+#
+# This script:
+# - Detects workflow artifact writes (research-notes.md, design.md, tasks.md)
+# - Invokes phase transition validation
+# - Provides immediate feedback on phase completion criteria
 #
 
 set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Read hook input from stdin
 if [ -t 0 ]; then
@@ -30,7 +34,40 @@ if [ -z "$FILE_PATH" ]; then
     exit 0
 fi
 
-# Get file extension
+# Check if this is a workflow artifact that needs validation
+is_workflow_artifact() {
+    local file="$1"
+    case "$file" in
+        */workflow-state.json|*/research-notes.md|*/design.md|*/tasks.md)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
+# Run phase transition validation for workflow artifacts
+# This provides immediate feedback on phase completion criteria
+if is_workflow_artifact "$FILE_PATH"; then
+    # Try to find check-phase-transition.sh in:
+    # 1. Same directory as this script
+    # 2. Project's .claude/hooks directory
+    VALIDATOR=""
+    if [ -x "$SCRIPT_DIR/check-phase-transition.sh" ]; then
+        VALIDATOR="$SCRIPT_DIR/check-phase-transition.sh"
+    elif [ -x ".claude/hooks/check-phase-transition.sh" ]; then
+        VALIDATOR=".claude/hooks/check-phase-transition.sh"
+    fi
+
+    if [ -n "$VALIDATOR" ]; then
+        # Pass file path to validator - it will check completion criteria
+        # and provide feedback (but not block writes)
+        echo "$FILE_PATH" | "$VALIDATOR" 2>&1 || true
+    fi
+fi
+
+# Get file extension for optional formatting
 EXTENSION="${FILE_PATH##*.}"
 
 # Optional: Run formatters based on file type
@@ -66,5 +103,5 @@ EXTENSION="${FILE_PATH##*.}"
 # Log the write operation (optional)
 # echo "[$(date -Iseconds)] Modified: $FILE_PATH" >> .claude/write-log.txt
 
-# Success
+# Success - PostToolUse hooks should not block
 exit 0

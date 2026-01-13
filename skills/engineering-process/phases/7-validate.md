@@ -34,7 +34,7 @@ The reviewer agent has read-only access plus ability to run tests, specializing 
 **For Code Review:**
 ```
 Task tool call:
-  subagent_type: "engineering-process:reviewer"
+  subagent_type: "reviewer"
   prompt: |
     Review the implementation for [feature name].
 
@@ -55,11 +55,10 @@ Task tool call:
 
 **For Programmatic Validation:**
 
-The `validator` agent is automatically invoked via hooks when workflow artifacts are written.
-Manual invocation is available via:
+The `validator` agent verifies phase completion criteria programmatically. Invoke it explicitly via Task tool:
 ```
 Task tool call:
-  subagent_type: "engineering-process:validator"
+  subagent_type: "validator"
   prompt: |
     Validate completion criteria for the validate phase.
     Story: [slug]

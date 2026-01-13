@@ -10,15 +10,15 @@
 
 ## Execution Model
 
-**These tasks are executed via the autonomous loop (`loop.sh`).** Each task runs in a FRESH context window to maximize quality.
+**These tasks are executed via iterative delegation to the implementer agent.** Each task runs in a focused context to maximize quality.
 
 ### Task Sizing Requirements
-- Each task should be completable in a **single fresh context**
+- Each task should be completable in a **single agent delegation**
 - Touch **no more than 5-10 files** per task
 - Be describable in **<1000 tokens**
 - Make **one logical, testable change**
 
-If a task is too big, split it before starting the loop.
+If a task is too big, split it before starting implementation.
 
 ## Task Legend
 
