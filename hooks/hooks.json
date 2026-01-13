@@ -23,7 +23,7 @@
           },
           {
             "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/quick-verification.sh\" \"$FILE\"",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/quick-verification.sh\"",
             "timeout": 60
           }
         ]

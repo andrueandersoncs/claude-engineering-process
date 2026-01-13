@@ -121,4 +121,10 @@ ln -s /path/to/claude-engineering-process ~/.claude/plugins/engineering-process
 
 ## Hooks Setup
 
-The hooks require validation scripts to be installed in your project. See `hooks/SETUP.md` for installation instructions.
+The hooks require validation scripts to be installed in your project. Use the setup command:
+
+```
+/engineering-process:setup
+```
+
+This automatically installs all required hook scripts to `.claude/hooks/` in your project. See `hooks/SETUP.md` for details.

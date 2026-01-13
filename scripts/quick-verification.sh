@@ -6,7 +6,13 @@
 # This is the "fast layer" of the verification pyramid,
 # suitable for running on every edit.
 #
-# Usage: quick-verification.sh [file_path]
+# Usage:
+#   quick-verification.sh [file_path]          # Pass file as argument
+#   echo '{"tool_input":{"file_path":"..."}}' | quick-verification.sh  # Read from stdin (hook mode)
+#
+# This implements the "verification pyramid" pattern from SOFTWARE_VERIFICATION.md:
+#   Fast checks (type checking, linting) run constantly as the bottom layer,
+#   catching errors early with immediate feedback.
 #
 # Exit codes:
 #   0 - All checks pass
@@ -23,7 +29,15 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
+# Get file path from argument or stdin (for hook compatibility)
 FILE_PATH="${1:-}"
+if [[ -z "$FILE_PATH" ]] && [[ ! -t 0 ]]; then
+    # Read from stdin if no argument and stdin is available (hook mode)
+    INPUT=$(cat)
+    if [[ -n "$INPUT" ]]; then
+        FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null || echo "")
+    fi
+fi
 ERRORS=0
 
 echo "======================================"

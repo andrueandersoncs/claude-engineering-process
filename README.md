@@ -42,6 +42,28 @@ claude --plugin-dir /path/to/claude-engineering-process
 ln -s /path/to/claude-engineering-process ~/.claude/plugins/engineering-process
 ```
 
+## Setup
+
+After installation, run the setup command to install validation hooks in your project:
+
+```bash
+/engineering-process:setup
+```
+
+This installs validation scripts to `.claude/hooks/` that provide:
+- **Phase gates** - Validates preconditions before file changes
+- **Downstream backpressure** - Validates artifacts as you work
+- **Fast verification** - Runs typecheck/lint/quick tests on edits
+- **Completion checks** - Verifies phase completion when Claude finishes
+
+You can also:
+```bash
+/engineering-process:setup --check      # Verify hooks are installed
+/engineering-process:setup --uninstall  # Remove installed hooks
+```
+
+> **Note**: Hooks are optional. The workflow works without them, but hooks provide programmatic guardrails.
+
 ## Usage
 
 ### Starting a Workflow
@@ -104,6 +126,7 @@ Each story gets its own directory with all artifacts co-located:
 | `/engineering-process:story` | Start a new workflow |
 | `/engineering-process:phase` | Navigate between phases |
 | `/engineering-process:checkpoint` | Validate phase completion |
+| `/engineering-process:setup` | Install validation hooks to project |
 
 ### Agents
 

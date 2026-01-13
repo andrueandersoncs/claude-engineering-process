@@ -2,9 +2,30 @@
 
 The hooks in this plugin require the validation scripts to be installed in your project.
 
-## Installation
+## Quick Setup (Recommended)
 
-Copy the hook scripts to your project's `.claude/hooks/` directory:
+Use the setup command to automatically install all hooks:
+
+```
+/engineering-process:setup
+```
+
+This will:
+- Create `.claude/hooks/` directory if needed
+- Copy all required and optional scripts
+- Make them executable
+- Verify the installation
+
+### Other Setup Options
+
+```
+/engineering-process:setup --check      # Verify hooks are installed
+/engineering-process:setup --uninstall  # Remove installed hooks
+```
+
+## Manual Installation
+
+If you prefer to install manually, copy the hook scripts to your project's `.claude/hooks/` directory:
 
 ```bash
 # From your project root
@@ -16,6 +37,7 @@ cp path/to/engineering-process/scripts/post-write.sh .claude/hooks/
 cp path/to/engineering-process/scripts/completion-check.sh .claude/hooks/
 cp path/to/engineering-process/scripts/check-phase-transition.sh .claude/hooks/
 cp path/to/engineering-process/scripts/validate-criteria.sh .claude/hooks/
+cp path/to/engineering-process/scripts/quick-verification.sh .claude/hooks/
 
 # Make executable
 chmod +x .claude/hooks/*.sh
@@ -27,6 +49,7 @@ chmod +x .claude/hooks/*.sh
 |------|---------|--------|---------|
 | PreToolUse | Before Write/Edit | `phase-gate.sh` | Validates phase preconditions before file changes |
 | PostToolUse | After Write/Edit | `post-write.sh` | Downstream backpressure - validates artifacts after changes |
+| PostToolUse | After Write/Edit | `quick-verification.sh` | Fast verification pyramid layer (typecheck, lint, quick tests) |
 | Stop | When Claude finishes | `completion-check.sh` | Checks if current phase is complete |
 
 ### Downstream Backpressure (per WIGGUM.md)
@@ -38,6 +61,28 @@ The `post-write.sh` hook implements the "downstream backpressure" principle from
 3. Provide immediate feedback on what's needed to advance
 
 This ensures validation happens *as you work*, not just at phase boundaries.
+
+### Verification Pyramid (per SOFTWARE_VERIFICATION.md)
+
+The `quick-verification.sh` hook implements the "fast layer" of the verification pyramid:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│ EXPENSIVE: Symbolic execution, model checking, proof        │
+│            → Run on code that passed everything else        │
+├─────────────────────────────────────────────────────────────┤
+│ MEDIUM: Property-based tests, fuzzing                       │
+│         → Run on promising candidates                       │
+├─────────────────────────────────────────────────────────────┤
+│ FAST: Type checking, linting, fast unit tests              │  ← quick-verification.sh
+│       → Run CONSTANTLY on every edit                        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+This layered approach provides:
+- **Immediate feedback** during implementation (fast checks catch 80% of issues)
+- **Cost efficiency** by only running expensive checks on code that passes fast checks
+- **Tight feedback loop** that aligns with the Ralph Playbook's "backpressure validates"
 
 ## Hooks Are Optional
 
