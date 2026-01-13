@@ -12,7 +12,8 @@ None (main conversation handles this phase, may consult with user)
 Based on requirements and research, list what WILL be done:
 - Core functionality to implement
 - Files that will be modified
-- Tests that will be written
+- **E2E tests that MUST be written (required for every story)**
+- Unit/integration tests that will be written
 - Documentation that will be updated
 
 ### 2. Define Out-of-Scope Items
@@ -22,27 +23,34 @@ Explicitly list what will NOT be done:
 - Nice-to-haves that aren't essential
 - Future enhancements
 
-### 3. Identify Minimal Viable Implementation
+### 3. Define Test Scope (CRITICAL)
+Specify which tests are required vs. optional:
+- **Required E2E tests** (at least one per story, ideally per acceptance criterion)
+- Required unit tests (for complex business logic)
+- Optional integration tests
+- Test coverage expectations
+
+### 4. Identify Minimal Viable Implementation
 Find the smallest useful increment:
 - What's the core value being delivered?
 - Can this be broken into smaller releases?
 - What's the 80/20 split (80% value, 20% effort)?
 
-### 4. Document Dependencies
+### 5. Document Dependencies
 List what must exist or be true:
 - Prerequisite features or data
 - External services or APIs
 - Team decisions or approvals
 - Infrastructure requirements
 
-### 5. Identify Risks
+### 6. Identify Risks
 Surface potential problems:
 - Technical risks
 - Timeline risks
 - Dependency risks
 - Quality risks
 
-### 6. Confirm with User
+### 7. Confirm with User
 If scope decisions affect the original request:
 - Present the proposed scope
 - Explain trade-offs
@@ -80,11 +88,20 @@ Can be delivered in phases:
 |------|------------|--------|------------|
 | Risk 1 | Low/Med/High | Low/Med/High | [How to address] |
 
+### Test Scope (REQUIRED)
+| Test Type | Required | File/Location | Status |
+|-----------|----------|---------------|--------|
+| E2E: User can X | Yes | tests/e2e/feature.spec.ts | Pending |
+| E2E: Error handling | Yes | tests/e2e/feature.spec.ts | Pending |
+| Unit: Logic Y | Yes | src/__tests__/logic.test.ts | Pending |
+| Integration: API Z | Optional | - | - |
+
 ### Definition of Done
 This task is complete when:
+- [ ] **All required E2E tests pass**
+- [ ] All required unit tests pass
 - [ ] Criterion 1
 - [ ] Criterion 2
-- [ ] Criterion 3
 ```
 
 ## Completion Criteria
@@ -96,6 +113,8 @@ This task is complete when:
 - [ ] Risks are identified with mitigations
 - [ ] Definition of done is established
 - [ ] User agrees with scope (if it differs from original request)
+- [ ] **CRITICAL: Required E2E tests are specified**
+- [ ] **CRITICAL: Test coverage expectations are defined**
 
 ## Scope Negotiation
 

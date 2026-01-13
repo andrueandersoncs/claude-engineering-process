@@ -6,6 +6,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a **Claude Code Plugin** called `engineering-process` that implements a structured 8-phase software engineering workflow. It orchestrates Claude through the complete journey from user story to deployed software using specialized agents, quality gates, and progressive context loading.
 
+## CRITICAL: Test-Driven Development
+
+**Tests are the source of truth.** This workflow mandates a test-first approach:
+
+1. **Every user story MUST have at least one end-to-end test written BEFORE any implementation code**
+2. **Tests MUST fail first** - verify they test what you think they test
+3. **A story is not complete until its tests pass**
+4. **Tests define "done"** - they are the verification of completion
+
+See `skills/engineering-process/TDD_TESTING_GUIDE.md` for complete testing guidelines.
+
 ## Architecture
 
 ### Plugin Structure
@@ -18,16 +29,16 @@ The plugin is documentation-driven (Markdown + JSON + Bash scripts) with no comp
 - **Hooks** (`hooks/`): Pre/post operation validation via `hooks.json`
 - **Scripts** (`scripts/`): Bash validation scripts for phase gates
 
-### The 8-Phase Engineering Process
+### The 8-Phase Engineering Process (Test-Driven)
 
-1. **Understand** - Comprehend requirements, identify gaps
-2. **Research** - Explorer agent analyzes codebase (read-only)
-3. **Scope** - Define boundaries, minimal viable implementation
-4. **Design** - Architect agent creates design documents
-5. **Decompose** - Break into implementable tasks
-6. **Implement** - Implementer agent writes code and tests
-7. **Validate** - Reviewer agent performs code review
-8. **Deploy** - Release and monitor
+1. **Understand** - Comprehend requirements → extract testable acceptance criteria
+2. **Research** - Explorer agent analyzes codebase → discover test patterns
+3. **Scope** - Define boundaries → define test scope
+4. **Design** - Architect creates design → design test architecture
+5. **Decompose** - Break into tasks → each task references required tests
+6. **Implement** - **Write E2E tests FIRST, then implement** (Red→Green→Refactor)
+7. **Validate** - Reviewer verifies quality → verify test coverage
+8. **Deploy** - Release and monitor → run full test suite before/after
 
 ### Agent Tool Access
 

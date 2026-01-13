@@ -11,7 +11,8 @@ Use this checklist before marking a workflow as complete.
 - [ ] No placeholder code remaining
 
 ### Code Quality
-- [ ] All tests pass
+- [ ] **All E2E tests pass**
+- [ ] **All unit tests pass**
 - [ ] No linting errors
 - [ ] No type errors
 - [ ] Code follows project conventions
@@ -31,15 +32,18 @@ Use this checklist before marking a workflow as complete.
 - [ ] Major issues addressed
 - [ ] Review approved
 
-### Testing
-- [ ] Unit tests written and passing
-- [ ] Integration tests written and passing
-- [ ] Manual testing completed
-- [ ] Edge cases verified
+### Testing (CRITICAL)
+- [ ] **E2E tests were written BEFORE implementation**
+- [ ] **E2E tests verify each acceptance criterion**
+- [ ] **All E2E tests pass**
+- [ ] Unit tests written for complex logic
+- [ ] Unit tests passing
+- [ ] Manual smoke testing completed
+- [ ] Edge cases covered by tests
 
-### Acceptance Criteria
-- [ ] Each criterion verified
-- [ ] Verification documented
+### Acceptance Criteria (Verified by Tests)
+- [ ] **Each criterion has a passing E2E test**
+- [ ] Verification documented (test file:test name)
 - [ ] Stakeholder sign-off (if required)
 
 ## Documentation Updated
@@ -67,6 +71,7 @@ Use this checklist before marking a workflow as complete.
 - [ ] No deployment errors
 
 ### Verification
+- [ ] **E2E tests pass against production/staging**
 - [ ] Smoke tests pass in production
 - [ ] Feature works as expected
 - [ ] No increase in error rates

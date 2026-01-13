@@ -12,12 +12,15 @@ May be handled in main conversation depending on deployment complexity.
 
 ### 1. Pre-Deployment Checklist
 Before deploying:
-- [ ] All tests pass in CI
+- [ ] **CRITICAL: All E2E tests pass in CI**
+- [ ] **CRITICAL: All unit tests pass in CI**
 - [ ] Code review approved
 - [ ] Documentation updated
 - [ ] Database migrations ready (if any)
 - [ ] Feature flags configured (if used)
 - [ ] Rollback plan documented
+
+**DO NOT DEPLOY if any tests are failing.**
 
 ### 2. Create Pull Request
 If not already done:
@@ -40,12 +43,20 @@ If schema changes:
 - Verify data integrity
 - Have rollback scripts ready
 
-### 5. Post-Deployment Verification
+### 5. Post-Deployment Verification (Run Tests Again)
 Immediately after deployment:
+- **Run E2E tests against production/staging**
 - Smoke test core functionality
 - Check error rates in monitoring
 - Verify logs for issues
 - Test the specific feature
+
+```bash
+# Run E2E tests against deployed environment
+PLAYWRIGHT_BASE_URL=https://staging.example.com npx playwright test
+# Or use environment-specific config
+npx playwright test --config=playwright.staging.config.ts
+```
 
 ### 6. Monitoring Setup
 Ensure visibility:
@@ -111,9 +122,10 @@ Document before deploying:
 - [Change 2]
 
 ## Testing
-- [ ] Unit tests pass
+- [ ] E2E tests pass (Playwright)
+- [ ] Unit tests pass (Vitest)
 - [ ] Integration tests pass
-- [ ] Manual testing completed
+- [ ] Manual smoke testing completed
 
 ## Deployment Notes
 - [ ] Database migration required
@@ -132,6 +144,7 @@ Document before deploying:
 ## Post-Deployment Tasks
 
 ### Immediate (within 1 hour)
+- [ ] **Run E2E tests against production**
 - [ ] Smoke test in production
 - [ ] Check error monitoring
 - [ ] Verify metrics
@@ -150,6 +163,8 @@ Document before deploying:
 
 ## Completion Criteria
 
+- [ ] **CRITICAL: All tests passed before deployment**
+- [ ] **CRITICAL: E2E tests pass in production environment**
 - [ ] PR merged
 - [ ] Deployment successful
 - [ ] Post-deployment verification passed

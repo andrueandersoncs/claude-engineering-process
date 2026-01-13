@@ -43,7 +43,15 @@ For each significant choice:
 - Explain why the chosen option is best
 - Note trade-offs accepted
 
-### 6. Risk Assessment
+### 6. Test Architecture Design (CRITICAL)
+Plan the testing strategy alongside feature design:
+- Where E2E tests will live (file names, directory structure)
+- What fixtures and test data are needed
+- What needs to be mocked vs. tested end-to-end
+- Test isolation strategy (how to avoid test interference)
+- Authentication/setup helpers needed
+
+### 7. Risk Assessment
 Review technical risks:
 - Security implications
 - Performance concerns
@@ -98,6 +106,31 @@ Create `design.md` in the story directory (`<project>/docs/stories/<story-slug>/
 ## Data Model
 [Schema changes]
 
+## Test Architecture (REQUIRED)
+
+### E2E Tests
+| Test Scenario | File Location | Dependencies |
+|---------------|---------------|--------------|
+| User can X | tests/e2e/feature.spec.ts | Auth fixture |
+| Error handling | tests/e2e/feature.spec.ts | None |
+
+### Test Infrastructure Needs
+- Fixtures required: [list]
+- Mocks required: [list]
+- Test data setup: [describe]
+- Cleanup strategy: [describe]
+
+### Test File Structure
+```
+tests/
+├── e2e/
+│   └── feature-name.spec.ts    # E2E tests (Playwright)
+├── unit/
+│   └── feature-name.test.ts    # Unit tests (Vitest)
+└── fixtures/
+    └── feature-fixtures.ts      # Shared test fixtures
+```
+
 ## Key Decisions
 
 ### Decision 1: [Topic]
@@ -124,6 +157,9 @@ Create `design.md` in the story directory (`<project>/docs/stories/<story-slug>/
 - [ ] Risks are identified with mitigations
 - [ ] Design document is saved as artifact
 - [ ] Design is reviewable by others
+- [ ] **CRITICAL: Test architecture is defined**
+- [ ] **CRITICAL: E2E test locations and scenarios are planned**
+- [ ] **CRITICAL: Test fixtures and mocks are identified**
 
 ## Design Review Checklist
 
@@ -134,7 +170,9 @@ Before finalizing:
 - [ ] Security implications considered
 - [ ] Performance implications considered
 - [ ] Migration path is clear (if changing existing systems)
-- [ ] Testable implementation approach
+- [ ] **Testable implementation approach**
+- [ ] **E2E test scenarios are defined**
+- [ ] **Test infrastructure needs are identified**
 
 ## Common Pitfalls
 

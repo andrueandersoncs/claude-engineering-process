@@ -3,6 +3,8 @@
 ## Purpose
 Break the design into implementable chunks. Create a task list that can be executed incrementally.
 
+**CRITICAL: Every task MUST reference its required tests. The first task for any feature should be "Write failing E2E test."**
+
 ## Agent
 **Can delegate to: `architect`** (for complex decomposition)
 
@@ -22,11 +24,12 @@ Sequence tasks appropriately:
 - Data layer before API before UI
 - Identify parallel vs. sequential work
 
-### 3. Define Task Boundaries
+### 3. Define Task Boundaries (CRITICAL: Include Tests)
 For each task, specify:
 - What files will be touched
 - What the completion criteria are
-- What tests verify completion
+- **What tests verify completion (REQUIRED)**
+- **Whether this task includes writing tests or implementation**
 
 ### 4. Identify Dependencies
 Map task relationships:
@@ -53,11 +56,24 @@ Estimated tasks: [count]
 
 ## Task List
 
+### Phase 0: Write Failing E2E Tests (MUST BE FIRST)
+- [ ] **Task 0.1**: Write E2E test for [main user flow]
+  - Files: `tests/e2e/feature.spec.ts`
+  - Criteria: Test exists and FAILS (feature not implemented yet)
+  - Verifies: [acceptance criterion]
+  - **Run test to confirm it fails before proceeding**
+
+- [ ] **Task 0.2**: Write E2E test for [error scenarios]
+  - Files: `tests/e2e/feature.spec.ts`
+  - Criteria: Test exists and FAILS
+  - Verifies: [acceptance criterion]
+
 ### Phase 1: Foundation
 - [ ] **Task 1.1**: [Title]
   - Files: `path/to/file.ts`
   - Criteria: [What makes this done]
-  - Tests: [What tests verify this]
+  - Tests: Task 0.1 should now pass
+  - Unit tests: [specific unit test if needed]
 
 - [ ] **Task 1.2**: [Title]
   - Files: `path/to/file.ts`
@@ -69,12 +85,13 @@ Estimated tasks: [count]
 - [ ] **Task 2.1**: [Title]
   - Files: `path/to/file.ts`, `path/to/other.ts`
   - Criteria: [What makes this done]
-  - Tests: [What tests verify this]
+  - Tests: [What tests verify this - must reference E2E test]
   - Depends on: Task 1.2
 
-### Phase 3: Integration
-- [ ] **Task 3.1**: [Title]
-  - ...
+### Phase 3: Integration & Verification
+- [ ] **Task 3.1**: Verify all E2E tests pass
+  - Criteria: All E2E tests from Phase 0 are GREEN
+  - Run: `npx playwright test feature.spec.ts`
 
 ## Dependencies Graph
 ```
@@ -120,6 +137,9 @@ Good task characteristics:
 - [ ] Dependencies are identified
 - [ ] Task order is logical
 - [ ] Task breakdown document is saved as artifact
+- [ ] **CRITICAL: First task(s) are "Write failing E2E test"**
+- [ ] **CRITICAL: Every implementation task references which test(s) it satisfies**
+- [ ] **CRITICAL: Final task verifies all E2E tests pass**
 
 ## Common Pitfalls
 
@@ -127,6 +147,8 @@ Good task characteristics:
 2. **Monolithic Tasks** - Tasks too large to track progress
 3. **Missing Tests** - Not including test writing in tasks
 4. **Unclear Criteria** - Vague definition of "done"
+5. **Tests After Implementation** - Writing tests last instead of first (VIOLATES TDD)
+6. **No Test References** - Tasks without clear connection to tests
 
 ## Next Phase
 Proceed to [Phase 6: Implement](6-implement.md) when criteria are met.

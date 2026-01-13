@@ -48,11 +48,15 @@ Use this checklist to ensure thorough research before design.
 - [ ] API response format understood
 - [ ] Authentication/authorization pattern clear
 
-### Testing Patterns
+### Testing Patterns (CRITICAL)
+- [ ] **E2E test framework identified (e.g., Playwright)**
+- [ ] **Unit test framework identified (e.g., Vitest)**
 - [ ] Test file naming/location understood
 - [ ] Test structure/framework identified
 - [ ] Fixture/mock patterns documented
 - [ ] Coverage expectations known
+- [ ] **Commands to run tests documented**
+- [ ] **Existing test examples reviewed**
 
 ## Dependencies
 
@@ -84,6 +88,7 @@ Use this checklist to ensure thorough research before design.
 - [ ] Sufficient understanding to design
 - [ ] Constraints and limitations clear
 - [ ] Recommendations for design documented
+- [ ] **Test infrastructure fully documented**
 
 ## Sign-off
 

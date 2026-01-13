@@ -99,6 +99,20 @@ Use this checklist to ensure complete design before implementation.
 - [ ] Monitoring planned for risks
 - [ ] Acceptance criteria for risk items
 
+## Test Architecture (CRITICAL)
+
+### E2E Test Plan
+- [ ] **E2E test scenarios defined for each acceptance criterion**
+- [ ] **E2E test file locations specified**
+- [ ] **Test dependencies (fixtures, mocks) identified**
+- [ ] **Test isolation strategy defined**
+
+### Test Infrastructure
+- [ ] **Existing test patterns referenced**
+- [ ] **New fixtures/helpers needed are identified**
+- [ ] **Test data setup documented**
+- [ ] **Cleanup strategy defined**
+
 ## Implementation Guidance
 
 ### For Implementers
@@ -106,12 +120,14 @@ Use this checklist to ensure complete design before implementation.
 - [ ] Ambiguous areas clarified
 - [ ] Patterns to follow referenced
 - [ ] Gotchas and warnings noted
+- [ ] **E2E tests to write FIRST are specified**
 
 ### Task Readiness
 - [ ] Can be broken into tasks
 - [ ] Dependencies are clear
 - [ ] No blocking unknowns
 - [ ] Estimable scope
+- [ ] **Test tasks included in breakdown**
 
 ## Sign-off
 

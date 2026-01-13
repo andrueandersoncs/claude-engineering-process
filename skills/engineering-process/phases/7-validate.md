@@ -3,6 +3,8 @@
 ## Purpose
 Verify that the implementation meets requirements, is secure, performs well, and is ready for deployment.
 
+**CRITICAL: Validation primarily means verifying that all tests pass and provide adequate coverage.**
+
 ## Agent
 **Delegate to: `reviewer`**
 
@@ -18,14 +20,18 @@ Examine all changes:
 - Performance implications
 - Maintainability
 
-### 2. Test Verification
-Run and assess tests:
+### 2. Test Verification (CRITICAL)
+Run and assess ALL tests:
 ```bash
-# Run full test suite
-npm test  # or equivalent
+# Run E2E tests (Playwright) - MUST ALL PASS
+npx playwright test
+npx playwright test --reporter=html  # For detailed report
 
-# Check coverage if available
-npm run coverage
+# Run unit tests (Vitest)
+npx vitest run
+
+# Check coverage - verify it meets thresholds
+npx vitest run --coverage
 
 # Run linting
 npm run lint
@@ -34,11 +40,18 @@ npm run lint
 npm run typecheck
 ```
 
-### 3. Acceptance Criteria Check
+**Test Coverage Requirements:**
+- All E2E tests from the task breakdown must pass
+- Unit test coverage should be reasonable for new code
+- No skipped or pending tests without documented reasons
+
+### 3. Acceptance Criteria Check (Via Tests)
 For each criterion from the user story:
-- Verify it's implemented
-- Test the specific behavior
-- Document how it was verified
+- **Verify there is at least one E2E test covering it**
+- Run the specific test to confirm it passes
+- Document which test verifies which criterion
+
+**Acceptance criteria are verified by passing tests, not manual inspection.**
 
 ### 4. Security Review
 Check for vulnerabilities:
@@ -108,15 +121,23 @@ Status: [APPROVED / CHANGES REQUESTED]
 #### Minor Issues
 [Can fix later]
 
-### Test Results
+### Test Results (CRITICAL)
+#### E2E Tests (Playwright)
 - Tests run: [count]
 - Tests passed: [count]
-- Coverage: [percentage if available]
+- Tests failed: [count] - MUST BE ZERO
 
-### Acceptance Criteria
-- [x] Criterion 1 - Verified: [how]
-- [x] Criterion 2 - Verified: [how]
-- [ ] Criterion 3 - NOT MET: [reason]
+#### Unit Tests (Vitest)
+- Tests run: [count]
+- Tests passed: [count]
+- Coverage: [percentage]
+
+### Acceptance Criteria → Test Mapping
+| Criterion | Test File | Test Name | Status |
+|-----------|-----------|-----------|--------|
+| User can X | tests/e2e/feature.spec.ts | "user can X" | PASS |
+| Error Y shown | tests/e2e/feature.spec.ts | "shows error Y" | PASS |
+| Logic Z works | src/__tests__/logic.test.ts | "handles Z correctly" | PASS |
 
 ### Security Assessment
 [Pass / Issues found]
@@ -147,12 +168,13 @@ Status: [APPROVED / CHANGES REQUESTED]
 
 ## Completion Criteria
 
+- [ ] **CRITICAL: All E2E tests pass**
+- [ ] **CRITICAL: Each acceptance criterion has a passing test**
 - [ ] Code review completed
-- [ ] All tests pass
-- [ ] Each acceptance criterion verified
+- [ ] All unit tests pass
+- [ ] Test coverage meets thresholds
 - [ ] Security review passed
 - [ ] Performance acceptable
-- [ ] Manual testing completed
 - [ ] Review report documented
 - [ ] All critical/major issues addressed
 
@@ -162,6 +184,8 @@ Status: [APPROVED / CHANGES REQUESTED]
 2. **Scope Expansion** - Adding new requirements during review
 3. **Perfectionism** - Blocking on minor style issues
 4. **Missing Edge Cases** - Only testing happy path
+5. **Manual-Only Validation** - Relying on manual testing instead of automated tests
+6. **Ignoring Test Coverage** - Not verifying that tests actually cover the acceptance criteria
 
 ## Next Phase
 Proceed to [Phase 8: Deploy](8-deploy.md) when validation passes.
