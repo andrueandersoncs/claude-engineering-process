@@ -12,13 +12,15 @@ You are orchestrating a structured software engineering workflow that transforms
 
 ## Philosophy
 
-**Three Core Principles:**
+**Four Core Principles:**
 
-1. **Assumptions are the enemy.** At every phase, surface implicit beliefs and verify them against reality. Engineers who skip verification and proceed on pattern-matching from past experience tend to struggle.
+1. **Start with the Job, not the feature.** Before building anything, understand the underlying Job To Be Done (JTBD). What progress is the user trying to make? What outcome do they need? Features are negotiable; the job is the real contract. The "so that" clause in user stories preserves the why—don't lose it.
 
-2. **Plans are disposable.** When trajectories diverge, regenerating costs one loop—far cheaper than spiraling endlessly. Don't patch forward; regenerate from corrected understanding.
+2. **Assumptions are the enemy.** At every phase, surface implicit beliefs and verify them against reality. Engineers who skip verification and proceed on pattern-matching from past experience tend to struggle.
 
-3. **Stories are negotiable.** Understanding should evolve as new information emerges. A good story describes desired outcomes, not prescribed implementation. Requirements can—and should—be refined at any phase when evidence warrants.
+3. **Plans are disposable.** When trajectories diverge, regenerating costs one loop—far cheaper than spiraling endlessly. Don't patch forward; regenerate from corrected understanding.
+
+4. **Stories are negotiable.** Understanding should evolve as new information emerges. A good story describes desired outcomes, not prescribed implementation. Requirements can—and should—be refined at any phase when evidence warrants.
 
 ## CRITICAL: Test-Driven Development
 
@@ -73,6 +75,11 @@ The `<story-slug>` is derived from the story title (e.g., "add-user-authenticati
   "story": "Description of the work",
   "slug": "add-user-authentication",
   "source": "issue URL or 'direct'",
+  "jtbd": {
+    "context": "When [situation/trigger]",
+    "job": "I want to [progress/action]",
+    "outcome": "So I can [desired result]"
+  },
   "currentPhase": "understand",
   "completedPhases": [],
   "startedAt": "ISO timestamp"
@@ -85,7 +92,7 @@ The `<story-slug>` is derived from the story title (e.g., "add-user-authenticati
 
 | # | Phase | Execution | Purpose | Key Output | Testing Focus |
 |---|-------|-----------|---------|------------|---------------|
-| 1 | Understand | - | Comprehend requirements | Clarified requirements | Extract testable acceptance criteria |
+| 1 | Understand | - | Comprehend requirements, extract JTBD | Clarified requirements + Job To Be Done | Extract testable acceptance criteria |
 | 2 | Research | `explorer` | Explore codebase | Research notes | Document test patterns & infrastructure |
 | 3 | Scope | - | Define boundaries | Scope definition | Define test scope (required vs optional) |
 | 4 | Design | `architect` | Plan solution | Design document | Design test architecture |
@@ -104,7 +111,7 @@ This workflow uses intelligent delegation to reduce user friction while preservi
 
 | Phase | Why User Required |
 |-------|-------------------|
-| **1: Understand** | User Story refinement is the contract. User must confirm acceptance criteria, resolve ambiguous scenarios, and answer blocking questions. |
+| **1: Understand** | User Story refinement is the contract. User must confirm the Job To Be Done (JTBD), verify acceptance criteria, resolve ambiguous scenarios, and answer blocking questions. The job is the real contract—features are negotiable. |
 | **8: Deploy (Production)** | Production deployment requires explicit user authorization. |
 
 ### Auto-Advanceable Phases (Delegated to Agents or Loop)

@@ -35,7 +35,63 @@ Surface what's not stated but implied:
 - What constraints exist from the context?
 - What quality attributes matter (performance, security, etc.)?
 
-### 4. Extract Testable Acceptance Criteria (CRITICAL)
+### 4. Extract the Job To Be Done (JTBD) — CRITICAL
+
+**Before diving into features, understand the underlying job the user is trying to accomplish.**
+
+The JTBD framework asks: What progress is the user trying to make? What outcome do they need?
+
+#### Why This Matters
+- Features are negotiable; the job is the real contract
+- Understanding the job reveals alternative approaches
+- Jobs are more stable than feature requests—they rarely change
+- The "so that" clause in user stories preserves the why
+
+#### How to Extract the Job
+
+1. **Ask "Why?" behind the feature request**
+   - Request: "Add a CSV export button"
+   - Job: "I need to share data with stakeholders who use Excel"
+   - Better solution might be: Direct Excel export, scheduled email reports, or dashboard sharing
+
+2. **Identify the context → job → outcome pattern**
+   ```
+   When [situation/context]
+   I want to [job/progress]
+   So I can [desired outcome]
+   ```
+
+3. **Look for competing alternatives**
+   - How do users accomplish this job today? (Workarounds reveal the real need)
+   - What would they "hire" if your feature didn't exist?
+   - Are there simpler ways to achieve the same outcome?
+
+4. **Validate the job, not just the feature**
+   - "If we build this feature, will it actually solve your problem?"
+   - "What would success look like for you?"
+   - "How will you know when this job is done?"
+
+#### Example JTBD Extraction
+
+```markdown
+**Feature Request**: "Add user activity logging"
+
+**Surface-level understanding**:
+- Track when users log in
+- Record actions taken
+- Store in database
+
+**JTBD Analysis**:
+- Context: Admin investigating a security incident
+- Job: Understand what happened and who was responsible
+- Outcome: Quickly answer "who did what and when?" during audits
+
+**Insight**: The job isn't "logging"—it's "incident investigation."
+This suggests we also need: search/filter, timeline view, export for compliance.
+A simple activity log table might not serve the actual job.
+```
+
+### 5. Extract Testable Acceptance Criteria (CRITICAL)
 For each requirement, define how it will be verified:
 - Convert requirements to "Given/When/Then" format
 - Ask: "How will we test that this works?"
@@ -49,13 +105,13 @@ Test Scenario: Given a registered user, when they enter valid credentials, then 
 E2E Test: tests/e2e/user-login.spec.ts
 ```
 
-### 5. Find Gaps and Ambiguities
+### 6. Find Gaps and Ambiguities
 List questions that need answers:
 - What information is missing?
 - What terms are ambiguous?
 - What edge cases are unspecified?
 
-### 6. Example-Driven Disambiguation (CRITICAL)
+### 7. Example-Driven Disambiguation (CRITICAL)
 Instead of asking abstract questions, use concrete scenarios to clarify:
 
 **Create scenarios that expose undefined behavior:**
@@ -77,19 +133,19 @@ Instead of asking abstract questions, use concrete scenarios to clarify:
 
 Use the template at `templates/scenarios.md` and save to story directory as `scenarios.md`.
 
-### 7. Clarify with User
+### 8. Clarify with User
 If there are blocking questions:
 - Present the questions clearly using scenarios where possible
 - Provide options when possible
 - Get explicit answers before proceeding
 
-### 8. Requirements Verification (CRITICAL)
+### 9. Requirements Verification (CRITICAL)
 
 Before proceeding to Research, verify that requirements are complete and consistent using the [Requirements Verification Checklist](../checklists/requirement-verification-checklist.md).
 
 **Core Verification Techniques:**
 
-#### 8.1 Contradiction Detection
+#### 9.1 Contradiction Detection
 Encode requirements and check for conflicts:
 - Does this requirement conflict with existing system behavior?
 - Does it conflict with other requirements in this story?
@@ -102,14 +158,14 @@ Example:
 - Status: CONTRADICTION - needs resolution
 ```
 
-#### 8.2 Precondition Inference
+#### 9.2 Precondition Inference
 For the request to make sense, what must be true?
 - **Entities**: Do required entities exist? (users, posts, permissions)
 - **Capabilities**: Does the system have required features? (email, auth)
 - **State**: Can the system reach the required state?
 - **Infrastructure**: Is required infrastructure available? (DB, cache)
 
-#### 8.3 The "Stupid User" Test
+#### 9.3 The "Stupid User" Test
 Deliberately misinterpret the request:
 - Who exactly is "users"? All users? Admins only?
 - What exactly is "fast"? 100ms? 1 second?
@@ -118,14 +174,14 @@ Deliberately misinterpret the request:
 
 **If multiple interpretations survive, clarification is required.**
 
-#### 8.4 Temporal Logic (for workflows)
+#### 9.4 Temporal Logic (for workflows)
 If the request describes a process, check:
 - No deadlocks (A requires B, B requires A)
 - No race conditions in happy path
 - Error recovery paths exist
 - No unbounded waits
 
-#### 8.5 Optional: Invoke Requirements Verifier Agent
+#### 9.5 Optional: Invoke Requirements Verifier Agent
 
 For complex requirements, delegate to the `requirements-verifier` agent:
 
@@ -155,6 +211,14 @@ Document in the conversation or a notes file:
 ### Request Summary
 [One paragraph summarizing what's being asked]
 
+### Job To Be Done (CRITICAL)
+**Context**: When [situation/trigger]
+**Job**: I want to [progress/action]
+**Outcome**: So I can [desired result]
+
+**Current alternatives**: [How users accomplish this today]
+**Why this solution**: [Why the proposed approach serves the job]
+
 ### Explicit Requirements
 - [ ] Requirement 1
 - [ ] Requirement 2
@@ -181,6 +245,8 @@ Document in the conversation or a notes file:
 ## Completion Criteria
 
 - [ ] Core request is understood and can be summarized
+- [ ] **CRITICAL: Job To Be Done is identified and documented** (context → job → outcome)
+- [ ] **CRITICAL: Current alternatives are understood** (how users accomplish this today)
 - [ ] Explicit requirements are listed
 - [ ] Implicit requirements are surfaced
 - [ ] Blocking questions are answered (or escalated to user)
