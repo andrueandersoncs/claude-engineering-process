@@ -43,13 +43,152 @@ GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
+MAGENTA='\033[0;35m'
+BOLD='\033[1m'
+DIM='\033[2m'
 NC='\033[0m'
+
+# Timing
+START_TIME=$(date +%s)
+TASK_TIMES=()
 
 log_info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 log_success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
 log_warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
 log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 log_task() { echo -e "${CYAN}[TASK]${NC} $1"; }
+
+# Progress bar helper
+draw_progress_bar() {
+    local current=$1
+    local total=$2
+    local width=${3:-40}
+    local label=${4:-"Progress"}
+
+    if [ "$total" -eq 0 ]; then
+        return
+    fi
+
+    local percent=$((current * 100 / total))
+    local filled=$((current * width / total))
+    local empty=$((width - filled))
+
+    local bar="${GREEN}"
+    for ((i=0; i<filled; i++)); do bar+="█"; done
+    bar+="${DIM}"
+    for ((i=0; i<empty; i++)); do bar+="░"; done
+    bar+="${NC}"
+
+    echo -e "  ${label}: $bar ${BOLD}${percent}%${NC} (${current}/${total})"
+}
+
+# Format duration
+format_duration() {
+    local seconds=$1
+    if [ "$seconds" -lt 60 ]; then
+        echo "${seconds}s"
+    elif [ "$seconds" -lt 3600 ]; then
+        echo "$((seconds / 60))m $((seconds % 60))s"
+    else
+        echo "$((seconds / 3600))h $((seconds % 3600 / 60))m"
+    fi
+}
+
+# Calculate ETA based on average task time
+calculate_eta() {
+    local remaining=$1
+
+    if [ ${#TASK_TIMES[@]} -eq 0 ]; then
+        echo "calculating..."
+        return
+    fi
+
+    local sum=0
+    for t in "${TASK_TIMES[@]}"; do
+        sum=$((sum + t))
+    done
+    local avg=$((sum / ${#TASK_TIMES[@]}))
+    local eta=$((avg * remaining))
+
+    format_duration "$eta"
+}
+
+# Show iteration header with progress
+show_iteration_header() {
+    local iteration=$1
+    local total_tasks=$2
+    local completed=$3
+    local task_title=$4
+    local task_id=$5
+
+    local remaining=$((total_tasks - completed))
+    local elapsed=$(($(date +%s) - START_TIME))
+
+    echo ""
+    echo -e "${BOLD}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BOLD}║${NC}  ${CYAN}ITERATION ${iteration}/${MAX_ITERATIONS}${NC}                                                         ${BOLD}║${NC}"
+    echo -e "${BOLD}╠══════════════════════════════════════════════════════════════════════════════╣${NC}"
+    draw_progress_bar "$completed" "$total_tasks" 50 "  Tasks   "
+    echo -e "  ${DIM}Elapsed:${NC} $(format_duration $elapsed)  ${DIM}|${NC}  ${DIM}ETA:${NC} $(calculate_eta $remaining)  ${DIM}|${NC}  ${DIM}Remaining:${NC} ${remaining} tasks"
+    echo -e "${BOLD}╠══════════════════════════════════════════════════════════════════════════════╣${NC}"
+    echo -e "${BOLD}║${NC}  ${YELLOW}▶ Task ${task_id}:${NC} ${task_title:0:58}"
+    echo -e "${BOLD}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+}
+
+# Show final summary
+show_final_summary() {
+    local iteration=$1
+    local completed=$2
+    local failed=$3
+    local total_tasks=$4
+    local remaining=$5
+
+    local elapsed=$(($(date +%s) - START_TIME))
+    local avg_time=0
+    if [ ${#TASK_TIMES[@]} -gt 0 ]; then
+        local sum=0
+        for t in "${TASK_TIMES[@]}"; do sum=$((sum + t)); done
+        avg_time=$((sum / ${#TASK_TIMES[@]}))
+    fi
+
+    echo ""
+    echo -e "${BOLD}╔══════════════════════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${BOLD}║${NC}  ${CYAN}LOOP COMPLETE${NC}                                                               ${BOLD}║${NC}"
+    echo -e "${BOLD}╠══════════════════════════════════════════════════════════════════════════════╣${NC}"
+    echo -e "${BOLD}║${NC}                                                                              ${BOLD}║${NC}"
+    draw_progress_bar "$completed" "$total_tasks" 50 "  Final   "
+    echo -e "${BOLD}║${NC}                                                                              ${BOLD}║${NC}"
+    echo -e "${BOLD}║${NC}  ${DIM}Statistics:${NC}                                                                 ${BOLD}║${NC}"
+    echo -e "${BOLD}║${NC}    Iterations run:    ${iteration}                                                     ${BOLD}║${NC}"
+    echo -e "${BOLD}║${NC}    Tasks completed:   ${GREEN}${completed}${NC}                                                      ${BOLD}║${NC}"
+    [ "$failed" -gt 0 ] && echo -e "${BOLD}║${NC}    Tasks failed:      ${RED}${failed}${NC}                                                       ${BOLD}║${NC}"
+    echo -e "${BOLD}║${NC}    Total time:        $(format_duration $elapsed)                                              ${BOLD}║${NC}"
+    [ "$avg_time" -gt 0 ] && echo -e "${BOLD}║${NC}    Avg time/task:     $(format_duration $avg_time)                                              ${BOLD}║${NC}"
+    echo -e "${BOLD}║${NC}                                                                              ${BOLD}║${NC}"
+
+    if [ "$remaining" = "0" ]; then
+        echo -e "${BOLD}║${NC}  ${GREEN}✓ All tasks completed!${NC}                                                      ${BOLD}║${NC}"
+        echo -e "${BOLD}║${NC}  ${DIM}Run '/engineering-process:phase validate' to proceed.${NC}                       ${BOLD}║${NC}"
+    else
+        echo -e "${BOLD}║${NC}  ${YELLOW}⚠ ${remaining} tasks remaining${NC}                                                       ${BOLD}║${NC}"
+    fi
+    echo -e "${BOLD}║${NC}                                                                              ${BOLD}║${NC}"
+    echo -e "${BOLD}╚══════════════════════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+}
+
+# Get total task count
+get_task_count() {
+    local tasks_file="$1"
+    "$SCRIPT_DIR/next-task.sh" "$tasks_file" --all 2>/dev/null | jq 'length' 2>/dev/null || echo "0"
+}
+
+# Get completed task count
+get_completed_count() {
+    local tasks_file="$1"
+    "$SCRIPT_DIR/next-task.sh" "$tasks_file" --all 2>/dev/null | jq '[.[] | select(.status == "complete")] | length' 2>/dev/null || echo "0"
+}
 
 # Find story directory
 find_story_dir() {
@@ -217,9 +356,20 @@ main() {
     local slug
     slug=$(jq -r '.slug // "unknown"' "$state_file")
 
-    log_info "Starting autonomous loop for: $story_name"
-    log_info "Story directory: $story_dir"
-    log_info "Max iterations: $MAX_ITERATIONS"
+    # Get initial task counts
+    local total_tasks
+    total_tasks=$(get_task_count "$tasks_file")
+
+    # Show initial status using show-status.sh
+    if [ -x "$SCRIPT_DIR/show-status.sh" ]; then
+        "$SCRIPT_DIR/show-status.sh" "$slug" 2>/dev/null || true
+    fi
+
+    echo -e "${BOLD}Starting autonomous implementation loop...${NC}"
+    echo -e "  ${DIM}Story:${NC}          $story_name"
+    echo -e "  ${DIM}Directory:${NC}      $story_dir"
+    echo -e "  ${DIM}Total tasks:${NC}    $total_tasks"
+    echo -e "  ${DIM}Max iterations:${NC} $MAX_ITERATIONS"
     echo ""
 
     local iteration=0
@@ -229,10 +379,9 @@ main() {
     while [ $iteration -lt $MAX_ITERATIONS ]; do
         iteration=$((iteration + 1))
 
-        echo ""
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        log_info "Loop iteration $iteration of $MAX_ITERATIONS"
-        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        # Get current task counts for progress display
+        local current_completed
+        current_completed=$(get_completed_count "$tasks_file")
 
         # Get next task
         local next_task
@@ -251,7 +400,12 @@ main() {
         task_files=$(echo "$next_task" | jq -r '.files // ""')
         task_criteria=$(echo "$next_task" | jq -r '.criteria // ""')
 
-        log_task "Task $task_id: $task_title"
+        # Show iteration header with progress
+        show_iteration_header "$iteration" "$total_tasks" "$current_completed" "$task_title" "$task_id"
+
+        # Start timing this task
+        local task_start_time
+        task_start_time=$(date +%s)
 
         # Mark task as in-progress
         "$SCRIPT_DIR/mark-complete.sh" "$tasks_file" "$task_id" "in_progress"
@@ -282,6 +436,13 @@ main() {
                     log_success "Validation passed"
                     "$SCRIPT_DIR/mark-complete.sh" "$tasks_file" "$task_id" "complete"
                     completed=$((completed + 1))
+
+                    # Record task timing for ETA calculation
+                    local task_end_time task_duration
+                    task_end_time=$(date +%s)
+                    task_duration=$((task_end_time - task_start_time))
+                    TASK_TIMES+=("$task_duration")
+                    echo -e "  ${DIM}Task completed in $(format_duration $task_duration)${NC}"
                 else
                     log_error "Validation failed - task remains in progress"
                     log_warn "Fix the issues and re-run the loop"
@@ -292,6 +453,12 @@ main() {
                 log_warn "Validation skipped (SKIP_VALIDATION=1)"
                 "$SCRIPT_DIR/mark-complete.sh" "$tasks_file" "$task_id" "complete"
                 completed=$((completed + 1))
+
+                # Record task timing
+                local task_end_time task_duration
+                task_end_time=$(date +%s)
+                task_duration=$((task_end_time - task_start_time))
+                TASK_TIMES+=("$task_duration")
             fi
         else
             log_error "Task execution failed"
@@ -303,24 +470,12 @@ main() {
         sleep 1
     done
 
-    echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    log_info "Loop Summary"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "  Iterations: $iteration"
-    echo "  Completed:  $completed"
-    echo "  Failed:     $failed"
-
-    # Check if all tasks done
+    # Check remaining tasks
     local remaining
     remaining=$("$SCRIPT_DIR/next-task.sh" "$tasks_file" --count 2>/dev/null || echo "0")
 
-    if [ "$remaining" = "0" ]; then
-        log_success "All tasks completed! Ready for validation phase."
-        log_info "Run '/engineering-process:phase validate' to proceed."
-    else
-        log_warn "$remaining tasks remaining"
-    fi
+    # Show final summary
+    show_final_summary "$iteration" "$completed" "$failed" "$total_tasks" "$remaining"
 }
 
 # Show help
