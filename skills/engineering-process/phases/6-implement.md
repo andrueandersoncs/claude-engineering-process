@@ -1,44 +1,92 @@
 # Phase 6: Implement
 
 ## Purpose
-Write tests first, then code that makes them pass. Execute tasks using **iterative delegation** to the implementer agent.
+Write tests first, then code that makes them pass. Execute tasks using **iterative execution** with fresh context per task.
 
 **CRITICAL: E2E tests MUST be written and verified to FAIL before any implementation code is written.**
 
-## Execution Model: Iterative Task Delegation
+## Execution Model: Two Approaches
 
-**Phase 6 uses per-task delegation to the implementer agent.** Each task gets its own focused context.
+Phase 6 supports two execution approaches. Choose based on your workflow:
+
+| Approach | When to Use | Context Behavior |
+|----------|-------------|------------------|
+| **loop.sh** (Recommended) | Autonomous execution, many tasks, best quality | Fresh CLI process per task |
+| **Task tool** | Interactive session, few tasks, need feedback | Subagent in forked context |
+
+### Why Fresh Context Matters (The Wiggum Insight)
+
+> "Fresh context per iteration prevents error accumulation" — The Ralph Playbook
+
+The outer loop (`loop.sh`) spawns a **completely fresh Claude CLI process** for each task. This provides:
+- **Zero context pollution** - No accumulated errors or assumptions
+- **Maximum "smart zone" utilization** - Each task gets Claude's full attention
+- **Consistent quality** - Task 20 gets the same quality as Task 1
+- **True isolation** - Failures don't cascade
+
+The Task tool approach runs the implementer as a **subagent in forked context**, which is good for interactive work but the **orchestrator's context still accumulates**.
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  ORCHESTRATOR COORDINATES - IMPLEMENTER EXECUTES               │
+│  RECOMMENDED: loop.sh for autonomous execution                  │
+│  ALTERNATIVE: Task tool for interactive sessions                │
 │                                                                 │
 │  Fresh context per task = consistent quality throughout        │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Why Per-Task Delegation?
+---
 
-By delegating each task separately:
-- **Each task gets focused context** - only the relevant task details, not accumulated state
-- **Quality remains consistent** - no context degradation across tasks
-- **Failures are isolated** - one task's issues don't pollute the next
+## Option A: Autonomous Loop (RECOMMENDED)
 
-### Implementation Flow
+Use `loop.sh` for the best alignment with Wiggum principles. This spawns fresh Claude CLI invocations for each task.
 
-When entering Phase 6, the orchestrator follows this sequence:
+### Running the Loop
+
+```bash
+# From your project root (not the plugin directory)
+./scripts/loop.sh                    # Uses most recent story
+./scripts/loop.sh add-authentication # Uses specific story slug
+```
+
+### How It Works
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  1. Read tasks.md to find the next incomplete task [ ]       │
-│  2. Delegate to implementer agent with task context          │
-│  3. Wait for implementer to complete the task                │
-│  4. Run validation (tests/lint/typecheck)                    │
-│  5. If PASS: verify task marked [x], proceed to step 1       │
-│  6. If FAIL: address the failure before continuing           │
-│  7. Repeat until all tasks are marked [x] complete           │
+│  loop.sh Execution Flow (Fresh Context Per Task)             │
+├──────────────────────────────────────────────────────────────┤
+│  1. Read tasks.md, find next incomplete task [ ]             │
+│  2. Build prompt with embedded context                       │
+│  3. Spawn fresh Claude: `claude -p "$prompt"`                │
+│  4. Claude executes ONE task (TDD cycle)                     │
+│  5. Run validation (tests/lint/typecheck)                    │
+│  6. If PASS: mark task [x] complete                          │
+│  7. If FAIL: pause for manual intervention                   │
+│  8. Loop back to step 1                                      │
 └──────────────────────────────────────────────────────────────┘
 ```
+
+### Configuration
+
+```bash
+# Environment variables
+MAX_ITERATIONS=50     # Safety limit (default)
+SKIP_VALIDATION=0     # Set to 1 to skip tests between tasks
+DRY_RUN=0             # Set to 1 to preview without executing
+CONTEXT_FILES=""      # Additional files to include (space-separated)
+```
+
+### Prerequisites
+
+1. Story must be in the `implement` phase
+2. `tasks.md` must exist with task breakdown
+3. Claude CLI must be available as `claude` (or set `CLAUDE_BIN`)
+
+---
+
+## Option B: Interactive Task Delegation
+
+Use the Task tool when you need interactive feedback or are working on a small number of tasks.
 
 ### Task Delegation
 
@@ -66,6 +114,22 @@ Task tool:
     4. Run tests to verify success
     5. Mark task [x] complete in tasks.md
 ```
+
+### Interactive Flow
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  1. Read tasks.md to find the next incomplete task [ ]       │
+│  2. Delegate to implementer agent with task context          │
+│  3. Wait for implementer to complete the task                │
+│  4. Run validation (tests/lint/typecheck)                    │
+│  5. If PASS: verify task marked [x], proceed to step 1       │
+│  6. If FAIL: address the failure before continuing           │
+│  7. Repeat until all tasks are marked [x] complete           │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Note**: With Task tool delegation, the orchestrator context grows with each iteration. For many tasks (5+), prefer `loop.sh`.
 
 ## The Test-First Mandate
 

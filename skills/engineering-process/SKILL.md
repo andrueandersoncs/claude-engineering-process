@@ -97,11 +97,11 @@ The `<story-slug>` is derived from the story title (e.g., "add-user-authenticati
 | 3 | Scope | - | Define boundaries | Scope definition | Define test scope (required vs optional) |
 | 4 | Design | `architect` | Plan solution | Design document | Design test architecture |
 | 5 | Decompose | `architect` | Break into tasks | Task breakdown | **Each task MUST reference its tests** |
-| 6 | Implement | `implementer` (per task) | Write tests, then code | **Passing E2E tests** + code | **Write failing test FIRST** |
+| 6 | Implement | `loop.sh` or `implementer` | Write tests, then code | **Passing E2E tests** + code | **Write failing test FIRST** |
 | 7 | Validate | `reviewer` | Verify quality | Review approval | Verify test coverage & quality |
 | 8 | Deploy | `implementer` | Release | Deployed feature | Run full test suite pre/post deploy |
 
-> **IMPORTANT**: Phase 6 uses **iterative task delegation** to the implementer agent. See [Phase 6: Implementation Workflow](#phase-6-implementation-workflow) section below.
+> **IMPORTANT**: Phase 6 supports two execution modes: **loop.sh** (recommended for autonomous execution with fresh context per task) or **Task tool delegation** (for interactive sessions). See [Phase 6: Implementation Workflow](#phase-6-implementation-workflow) section below.
 
 ## Delegation Model
 
@@ -122,7 +122,7 @@ This workflow uses intelligent delegation to reduce user friction while preservi
 | **3: Scope** | `scope-analyst` | Scope is strictly additive and pattern-following; escalates reductions/novel changes |
 | **4: Design** | `architect` | `design.md` exists, no simulation stuck points, test architecture defined |
 | **5: Decompose** | `architect` | `tasks.md` exists with E2E tests first, each task has completion criteria |
-| **6: Implement** | `implementer` (per task) | All tasks `[x]` complete, E2E tests pass, linting passes |
+| **6: Implement** | `loop.sh` (preferred) or `implementer` | All tasks `[x]` complete, E2E tests pass, linting passes |
 | **7: Validate** | `reviewer` + `validator` | All tests pass, zero critical/major issues, acceptance criteria mapped to tests |
 
 ### Delegation Agents
@@ -357,19 +357,49 @@ Load these on-demand (not all at once):
 
 **See [Phase 6: Implement](phases/6-implement.md) for complete implementation workflow details.**
 
-Phase 6 uses **iterative per-task delegation** to the implementer agent. Key points:
+Phase 6 uses **iterative per-task execution** with fresh context per task. Two approaches are available:
+
+### Execution Options
+
+| Approach | When to Use | How It Works |
+|----------|-------------|--------------|
+| **loop.sh** (Recommended) | Autonomous execution, many tasks | Fresh Claude CLI process per task |
+| **Task tool** | Interactive session, few tasks | Subagent in forked context |
+
+### Why loop.sh is Preferred (The Wiggum Insight)
+
+> "Fresh context per iteration prevents error accumulation" — The Ralph Playbook
+
+The `loop.sh` script spawns a **completely fresh Claude CLI process** for each task, providing:
+- **Zero context pollution** — No accumulated errors or assumptions
+- **Maximum "smart zone" utilization** — Each task gets Claude's full attention
+- **Consistent quality** — Task 20 gets the same quality as Task 1
+
+**Running the autonomous loop:**
+```bash
+# From your project root
+./scripts/loop.sh                    # Uses most recent story
+./scripts/loop.sh add-authentication # Specific story slug
+```
+
+### Key Points (Both Approaches)
 
 1. **Fresh context per task** — Each task gets focused context without accumulated state
-2. **Backpressure validation** — Run `npm test` via Bash after EVERY task (mandatory)
+2. **Backpressure validation** — Run tests after EVERY task (mandatory)
 3. **Never trust self-reports** — Always verify programmatically before advancing
 4. **TDD sequence** — Write failing test → Verify failure → Implement → Verify pass
 
-**Quick reference:**
+### Interactive Task Delegation (Alternative)
+
+Use Task tool delegation when you need interactive feedback or are working on a small number of tasks (less than 5):
+
 ```
 Task tool:
   subagent_type: "implementer"
   prompt: "Complete Task X.Y from docs/stories/<slug>/tasks.md"
 ```
+
+**Note**: With Task tool delegation, the orchestrator context grows with each iteration. For larger task lists, use `loop.sh`.
 
 ## Supporting Resources
 

@@ -40,21 +40,33 @@ The plugin is documentation-driven (Markdown + JSON + Bash scripts) with no comp
 7. **Validate** - Reviewer verifies quality → verify test coverage
 8. **Deploy** - Release and monitor → run full test suite before/after
 
-### Phase 6: Iterative Task Delegation
+### Phase 6: Iterative Implementation (Wiggum Pattern)
 
-Phase 6 (Implement) uses **per-task delegation** to the implementer agent. The orchestrator:
+Phase 6 (Implement) supports two execution approaches aligned with the Ralph Playbook:
 
+**Option A: loop.sh (RECOMMENDED)**
+```bash
+./scripts/loop.sh [story-slug]
+```
+
+The loop.sh script spawns **fresh Claude CLI processes** for each task:
 1. Reads `tasks.md` to find the next incomplete task
-2. Delegates to the `implementer` agent with task context
-3. Waits for task completion
+2. Builds prompt with embedded context
+3. Spawns fresh Claude: `claude -p "$prompt"`
 4. Runs validation (tests/lint)
 5. Marks task complete if validation passes
 6. Repeats until all tasks done
 
-**Why per-task delegation?**
-- Fresh context per task = consistent quality throughout
-- Each task gets focused context without accumulated state
-- Failures are isolated - one task's issues don't pollute the next
+**Option B: Task tool delegation (Interactive)**
+
+Use Task tool to delegate to the `implementer` agent when you need interactive feedback.
+
+**Why fresh context matters (The Wiggum Insight):**
+- **Zero context pollution** - No accumulated errors or assumptions
+- **Consistent quality** - Task 20 gets the same quality as Task 1
+- **Maximum "smart zone" utilization** - Each task gets Claude's full attention
+
+For many tasks (5+), prefer `loop.sh`. For interactive work, use Task tool delegation.
 
 ### Agent Tool Access
 
