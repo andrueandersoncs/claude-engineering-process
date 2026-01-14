@@ -1,0 +1,23 @@
+{
+  "story": "Redesign TUI Inter-Process Communication - Fix the TUI package's IPC mechanism that hangs with no streaming output by implementing the proven `-p` flag approach with proper Node.js spawn configuration",
+  "slug": "fix-tui-ipc-communication",
+  "source": "docs/stories/drafts/fix-tui-ipc-communication/user-story.md",
+  "currentPhase": "validate",
+  "completedPhases": ["understand", "research", "scope", "design", "decompose", "implement"],
+  "startedAt": "2026-01-14T00:00:00.000Z",
+  "rootCause": {
+    "symptom": "TUI hangs with no streaming output",
+    "frequency": "100% reproducible",
+    "causes": [
+      "Missing ANTHROPIC_API_KEY: '' in spawn environment",
+      "No --output-format stream-json for real-time streaming",
+      "Shell piping complexity with temp files"
+    ],
+    "proof": "scripts/loop.sh works reliably with claude -p flag"
+  },
+  "artifacts": {
+    "design": "docs/stories/fix-tui-ipc-communication/design.md",
+    "tasks": "docs/stories/fix-tui-ipc-communication/tasks.md",
+    "research": "docs/stories/fix-tui-ipc-communication/research-notes.md"
+  }
+}

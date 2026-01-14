@@ -33,3 +33,6 @@ export type {
   OrchestratorOptions,
   StateChangeCallback,
 } from './workflowOrchestrator';
+
+export { JsonlStreamParser } from './jsonlParser';
+export type { JsonlMessage } from './jsonlParser';

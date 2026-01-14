@@ -4,13 +4,18 @@
  * Spawns and manages Claude CLI subprocesses following the "fresh context per task"
  * pattern from loop.sh (Ralph Wiggum insight). Each task gets a fresh Claude instance
  * to avoid context pollution and ensure consistent quality.
+ *
+ * This implementation uses direct `-p` flag to pass prompts to Claude CLI, replacing
+ * the previous temp file + shell piping approach. This eliminates file I/O overhead
+ * and potential race conditions.
+ *
+ * @see {@link https://github.com/anthropics/anthropic-sdk-typescript/issues/771|GitHub Issue #771}
+ *      for the spawn fix that enables reliable JSONL streaming
  */
 
-import { execa, execaCommand, type ExecaChildProcess, type ExecaReturnValue, type ExecaError } from 'execa';
-import { writeFileSync, unlinkSync } from 'fs';
-import { join } from 'path';
-import { tmpdir } from 'os';
+import { execa, type ExecaChildProcess, type ExecaReturnValue, type ExecaError } from 'execa';
 import type { Readable } from 'stream';
+import { JsonlStreamParser } from './jsonlParser';
 
 /**
  * Callback for receiving output from the subprocess.
@@ -65,7 +70,7 @@ export class ClaudeRunnerImpl implements ClaudeRunner {
   private outputCallbacks: Set<OutputCallback> = new Set();
   private exitCallbacks: Set<ExitCallback> = new Set();
   private claudeBin: string;
-  private tempFile: string | null = null;
+  private jsonlParser: JsonlStreamParser = new JsonlStreamParser();
 
   /**
    * Creates a new ClaudeRunner instance.
@@ -81,11 +86,23 @@ export class ClaudeRunnerImpl implements ClaudeRunner {
    *
    * If a process is already running, it will be killed first.
    *
-   * Uses a temp file approach for stdin because execa's direct stdin input
-   * doesn't work reliably with Claude CLI for long prompts.
+   * Uses direct `-p` flag to pass prompts to Claude CLI, following the proven
+   * pattern from loop.sh.
+   *
+   * **Critical environment configuration:**
+   * - `ANTHROPIC_API_KEY: ''` - Empty string prevents Claude CLI from hanging during
+   *   subprocess spawn. This is required for reliable stdio communication.
+   * - `FORCE_COLOR: '1'` - Preserves colored output in the stream
+   *
+   * **stdio configuration:**
+   * - stdin: 'inherit' - Allows interactive prompts if needed (though not typical)
+   * - stdout: 'pipe' - Captures JSONL stream for parsing
+   * - stderr: 'pipe' - Captures error messages
    *
    * @param prompt - The prompt to send to Claude
    * @param options - Optional spawn options (cwd, env)
+   *
+   * @see {@link https://github.com/anthropics/anthropic-sdk-typescript/issues/771|GitHub Issue #771}
    */
   spawn(prompt: string, options: SpawnOptions = {}): void {
     // Kill any existing process first
@@ -93,62 +110,64 @@ export class ClaudeRunnerImpl implements ClaudeRunner {
       this.kill();
     }
 
-    // Merge environment with FORCE_COLOR preserved for colored output
+    // Reset JSONL parser for fresh state
+    this.jsonlParser = new JsonlStreamParser();
+
+    // Merge environment with required configuration for reliable spawn.
+    // ANTHROPIC_API_KEY: '' prevents hang during subprocess spawn (see method docs).
+    // FORCE_COLOR: '1' preserves colored output in the stream.
     const env: Record<string, string> = {
       ...process.env as Record<string, string>,
+      ANTHROPIC_API_KEY: '',
       FORCE_COLOR: '1',
       ...options.env,
     };
 
     try {
-      // Write prompt to a temp file to avoid stdin issues with execa
-      // The temp file approach is more reliable than shell piping for long prompts
-      this.tempFile = join(tmpdir(), `claude-prompt-${Date.now()}-${Math.random().toString(36).slice(2)}.txt`);
-      writeFileSync(this.tempFile, prompt);
-
-      // Use shell mode to pipe the temp file to Claude
-      const command = `cat "${this.tempFile}" | ${this.claudeBin} --print`;
-
-      this.process = execaCommand(command, {
-        shell: true,
+      // Use direct execa spawn with -p flag (proven pattern from loop.sh)
+      // --output-format stream-json enables real-time JSONL streaming
+      // --verbose is required when combining -p with --output-format stream-json
+      // --permission-mode bypassPermissions prevents hang from permission prompts
+      this.process = execa(this.claudeBin, [
+        '-p', prompt,
+        '--output-format', 'stream-json',
+        '--verbose',
+        '--permission-mode', 'bypassPermissions',
+      ], {
+        stdio: ['inherit', 'pipe', 'pipe'],
         env,
         cwd: options.cwd,
         // Don't throw on non-zero exit (we handle it in onExit)
         reject: false,
-        // Buffer output for final capture, but also stream it
-        buffer: true,
       });
 
       // Check if process started successfully
       if (!this.process.pid) {
         this.notifyOutput('[Error] Process failed to start - no PID assigned\n');
-        this.cleanupTempFile();
         this.notifyExit(1);
         return;
       }
 
       this.notifyOutput(`[Debug] Process started with PID: ${this.process.pid}\n`);
 
-      // Set up stdout streaming
+      // Set up stdout streaming with JSONL parsing
       if (this.process.stdout) {
-        this.setupStreamHandler(this.process.stdout);
+        this.setupJsonlStreamHandler(this.process.stdout);
       }
 
-      // Set up stderr streaming (also captured for error messages)
+      // Set up stderr streaming (raw text for error messages)
       if (this.process.stderr) {
-        this.setupStreamHandler(this.process.stderr);
+        this.setupRawStreamHandler(this.process.stderr);
       }
 
       // Handle process exit
       this.process
         .then((result: ExecaReturnValue) => {
-          this.cleanupTempFile();
           const exitCode = result.exitCode ?? 1;
           this.notifyExit(exitCode);
           this.process = null;
         })
         .catch((error: ExecaError) => {
-          this.cleanupTempFile();
           // Process was killed or errored
           this.notifyOutput(`[Error] Process error: ${error.message}\n`);
           if (error.stderr) {
@@ -159,30 +178,61 @@ export class ClaudeRunnerImpl implements ClaudeRunner {
           this.process = null;
         });
     } catch (error) {
-      this.cleanupTempFile();
       this.notifyOutput(`[Error] Failed to spawn process: ${error instanceof Error ? error.message : String(error)}\n`);
       this.notifyExit(1);
     }
   }
 
   /**
-   * Cleans up the temp file used for stdin input.
+   * Sets up a stream handler that parses JSONL and extracts displayable content.
+   * Used for stdout which contains Claude's streaming JSONL output.
+   *
+   * The stream contains newline-delimited JSON events from Claude API:
+   * - `content_block_delta` with `text_delta` - Streaming text chunks
+   * - `content_block_start` with `tool_use` - Tool invocation events
+   * - `result` - Final completion event
+   *
+   * The JsonlStreamParser handles partial lines across chunks and extracts
+   * only displayable content, filtering out metadata events.
+   *
+   * @see JsonlStreamParser for parsing implementation details
    */
-  private cleanupTempFile(): void {
-    if (this.tempFile) {
-      try {
-        unlinkSync(this.tempFile);
-      } catch {
-        // Ignore cleanup errors
+  private setupJsonlStreamHandler(stream: Readable): void {
+    stream.on('data', (chunk: Buffer) => {
+      const text = chunk.toString();
+      const messages = this.jsonlParser.parse(text);
+
+      for (const msg of messages) {
+        switch (msg.type) {
+          case 'text':
+            this.notifyOutput(msg.content);
+            break;
+          case 'tool_use':
+            this.notifyOutput(`\n[Tool: ${msg.toolName}]\n`);
+            break;
+          case 'result':
+            // Final result handled by exit callback
+            break;
+        }
       }
-      this.tempFile = null;
-    }
+    });
+
+    stream.on('end', () => {
+      // Flush any remaining buffered content
+      const remaining = this.jsonlParser.flush();
+      for (const msg of remaining) {
+        if (msg.type === 'text') {
+          this.notifyOutput(msg.content);
+        }
+      }
+    });
   }
 
   /**
-   * Sets up a stream handler that converts chunks to strings and notifies callbacks.
+   * Sets up a raw stream handler that passes text directly to callbacks.
+   * Used for stderr which contains error messages (not JSONL).
    */
-  private setupStreamHandler(stream: Readable): void {
+  private setupRawStreamHandler(stream: Readable): void {
     stream.on('data', (chunk: Buffer) => {
       const text = chunk.toString();
       this.notifyOutput(text);
@@ -225,7 +275,6 @@ export class ClaudeRunnerImpl implements ClaudeRunner {
       this.process.kill('SIGTERM');
       this.process = null;
     }
-    this.cleanupTempFile();
   }
 
   /**

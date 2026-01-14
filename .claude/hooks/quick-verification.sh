@@ -173,6 +173,20 @@ run_lint() {
     esac
 }
 
+# Portable timeout function (works on macOS and Linux)
+run_with_timeout() {
+    local timeout_sec="$1"
+    shift
+    if command -v timeout &>/dev/null; then
+        timeout "${timeout_sec}s" "$@"
+    elif command -v gtimeout &>/dev/null; then
+        gtimeout "${timeout_sec}s" "$@"
+    else
+        # No timeout available, run without it
+        "$@"
+    fi
+}
+
 # Run quick tests (smoke tests / unit tests)
 run_quick_tests() {
     echo ""
@@ -188,8 +202,9 @@ run_quick_tests() {
                     npm run test:fast 2>&1 && echo -e "${GREEN}✓ Fast tests passed${NC}" || { echo -e "${RED}✗ Fast tests failed${NC}"; ((ERRORS++)); }
                 else
                     # Run all tests but with short timeout
-                    timeout 60s npm test 2>&1 && echo -e "${GREEN}✓ Tests passed${NC}" || {
-                        if [[ $? -eq 124 ]]; then
+                    run_with_timeout 60 npm test 2>&1 && echo -e "${GREEN}✓ Tests passed${NC}" || {
+                        local exit_code=$?
+                        if [[ $exit_code -eq 124 ]]; then
                             echo -e "${YELLOW}⊘ Tests timed out (60s limit for quick check)${NC}"
                         else
                             echo -e "${RED}✗ Tests failed${NC}"
@@ -203,10 +218,11 @@ run_quick_tests() {
             ;;
         python)
             if [[ -f "pytest.ini" ]] || [[ -f "pyproject.toml" ]] || [[ -d "tests" ]]; then
-                # Run with short timeout and only unit tests if marked
+                # Run with only unit tests if marked
                 if pytest --collect-only -q -m "unit or not slow" 2>/dev/null | grep -q "test"; then
-                    timeout 60s pytest -m "unit or not slow" -x -q 2>&1 && echo -e "${GREEN}✓ Tests passed${NC}" || {
-                        if [[ $? -eq 124 ]]; then
+                    run_with_timeout 60 pytest -m "unit or not slow" -x -q 2>&1 && echo -e "${GREEN}✓ Tests passed${NC}" || {
+                        local exit_code=$?
+                        if [[ $exit_code -eq 124 ]]; then
                             echo -e "${YELLOW}⊘ Tests timed out${NC}"
                         else
                             echo -e "${RED}✗ Tests failed${NC}"
@@ -214,7 +230,7 @@ run_quick_tests() {
                         fi
                     }
                 else
-                    timeout 60s pytest -x -q 2>&1 && echo -e "${GREEN}✓ Tests passed${NC}" || { echo -e "${RED}✗ Tests failed${NC}"; ((ERRORS++)); }
+                    run_with_timeout 60 pytest -x -q 2>&1 && echo -e "${GREEN}✓ Tests passed${NC}" || { echo -e "${RED}✗ Tests failed${NC}"; ((ERRORS++)); }
                 fi
             else
                 echo -e "${YELLOW}⊘ No tests configured${NC}"

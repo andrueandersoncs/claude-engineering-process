@@ -2,7 +2,7 @@
 
 // src/index.tsx
 import { existsSync as existsSync2 } from "fs";
-import { join as join7 } from "path";
+import { join as join6 } from "path";
 import { render } from "ink";
 
 // src/components/App.tsx
@@ -1602,16 +1602,100 @@ var useTUIStore = create((set, get) => ({
 }));
 
 // src/services/claudeRunner.ts
-import { execaCommand } from "execa";
-import { writeFileSync as writeFileSync2, unlinkSync } from "fs";
-import { join as join5 } from "path";
-import { tmpdir } from "os";
+import { execa } from "execa";
+
+// src/services/jsonlParser.ts
+var JsonlStreamParser = class {
+  buffer = "";
+  /**
+   * Process incoming chunk, return parsed messages.
+   * Handles partial lines by buffering until newline.
+   *
+   * @param chunk - Raw string chunk from stream
+   * @returns Array of parsed messages (may be empty)
+   */
+  parse(chunk) {
+    this.buffer += chunk;
+    const lines = this.buffer.split("\n");
+    this.buffer = lines.pop() ?? "";
+    const messages = [];
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      try {
+        const msg = this.parseLine(line);
+        if (msg) messages.push(msg);
+      } catch {
+      }
+    }
+    return messages;
+  }
+  /**
+   * Flush any remaining buffered content.
+   * Call this when the stream ends to process any incomplete final line.
+   *
+   * @returns Array of parsed messages from remaining buffer (may be empty)
+   */
+  flush() {
+    if (!this.buffer.trim()) {
+      this.buffer = "";
+      return [];
+    }
+    try {
+      const msg = this.parseLine(this.buffer);
+      this.buffer = "";
+      return msg ? [msg] : [];
+    } catch {
+      this.buffer = "";
+      return [];
+    }
+  }
+  /**
+   * Parse a single JSONL line into a message.
+   *
+   * @param line - Single line of JSON
+   * @returns Parsed message or null if event type is not displayable
+   */
+  parseLine(line) {
+    const json = JSON.parse(line);
+    if (json.type === "content_block_delta") {
+      if (json.delta?.type === "text_delta") {
+        return { type: "text", content: json.delta.text };
+      }
+    }
+    if (json.type === "content_block_start") {
+      if (json.content_block?.type === "tool_use") {
+        return {
+          type: "tool_use",
+          content: `Using tool: ${json.content_block.name}`,
+          toolName: json.content_block.name,
+          toolInput: json.content_block.input
+        };
+      }
+    }
+    if (json.message?.content) {
+      for (const item of json.message.content) {
+        if (item.type === "text") {
+          return { type: "text", content: item.text };
+        }
+      }
+    }
+    if (json.type === "result") {
+      return {
+        type: "result",
+        content: json.result ?? ""
+      };
+    }
+    return null;
+  }
+};
+
+// src/services/claudeRunner.ts
 var ClaudeRunnerImpl = class {
   process = null;
   outputCallbacks = /* @__PURE__ */ new Set();
   exitCallbacks = /* @__PURE__ */ new Set();
   claudeBin;
-  tempFile = null;
+  jsonlParser = new JsonlStreamParser();
   /**
    * Creates a new ClaudeRunner instance.
    *
@@ -1625,8 +1709,8 @@ var ClaudeRunnerImpl = class {
    *
    * If a process is already running, it will be killed first.
    *
-   * Uses a temp file approach for stdin because execa's direct stdin input
-   * doesn't work reliably with Claude CLI for long prompts.
+   * Uses direct `-p` flag to pass prompts to Claude CLI, following the proven
+   * pattern from loop.sh (GitHub Issue #771).
    *
    * @param prompt - The prompt to send to Claude
    * @param options - Optional spawn options (cwd, env)
@@ -1635,45 +1719,47 @@ var ClaudeRunnerImpl = class {
     if (this.process) {
       this.kill();
     }
+    this.jsonlParser = new JsonlStreamParser();
     const env = {
       ...process.env,
+      ANTHROPIC_API_KEY: "",
       FORCE_COLOR: "1",
       ...options.env
     };
     try {
-      this.tempFile = join5(tmpdir(), `claude-prompt-${Date.now()}-${Math.random().toString(36).slice(2)}.txt`);
-      writeFileSync2(this.tempFile, prompt);
-      const command = `cat "${this.tempFile}" | ${this.claudeBin} --print`;
-      this.process = execaCommand(command, {
-        shell: true,
+      this.process = execa(this.claudeBin, [
+        "-p",
+        prompt,
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--permission-mode",
+        "bypassPermissions"
+      ], {
+        stdio: ["inherit", "pipe", "pipe"],
         env,
         cwd: options.cwd,
         // Don't throw on non-zero exit (we handle it in onExit)
-        reject: false,
-        // Buffer output for final capture, but also stream it
-        buffer: true
+        reject: false
       });
       if (!this.process.pid) {
         this.notifyOutput("[Error] Process failed to start - no PID assigned\n");
-        this.cleanupTempFile();
         this.notifyExit(1);
         return;
       }
       this.notifyOutput(`[Debug] Process started with PID: ${this.process.pid}
 `);
       if (this.process.stdout) {
-        this.setupStreamHandler(this.process.stdout);
+        this.setupJsonlStreamHandler(this.process.stdout);
       }
       if (this.process.stderr) {
-        this.setupStreamHandler(this.process.stderr);
+        this.setupRawStreamHandler(this.process.stderr);
       }
       this.process.then((result) => {
-        this.cleanupTempFile();
         const exitCode = result.exitCode ?? 1;
         this.notifyExit(exitCode);
         this.process = null;
       }).catch((error) => {
-        this.cleanupTempFile();
         this.notifyOutput(`[Error] Process error: ${error.message}
 `);
         if (error.stderr) {
@@ -1685,28 +1771,48 @@ var ClaudeRunnerImpl = class {
         this.process = null;
       });
     } catch (error) {
-      this.cleanupTempFile();
       this.notifyOutput(`[Error] Failed to spawn process: ${error instanceof Error ? error.message : String(error)}
 `);
       this.notifyExit(1);
     }
   }
   /**
-   * Cleans up the temp file used for stdin input.
+   * Sets up a stream handler that parses JSONL and extracts displayable content.
+   * Used for stdout which contains Claude's streaming JSONL output.
    */
-  cleanupTempFile() {
-    if (this.tempFile) {
-      try {
-        unlinkSync(this.tempFile);
-      } catch {
+  setupJsonlStreamHandler(stream) {
+    stream.on("data", (chunk) => {
+      const text = chunk.toString();
+      const messages = this.jsonlParser.parse(text);
+      for (const msg of messages) {
+        switch (msg.type) {
+          case "text":
+            this.notifyOutput(msg.content);
+            break;
+          case "tool_use":
+            this.notifyOutput(`
+[Tool: ${msg.toolName}]
+`);
+            break;
+          case "result":
+            break;
+        }
       }
-      this.tempFile = null;
-    }
+    });
+    stream.on("end", () => {
+      const remaining = this.jsonlParser.flush();
+      for (const msg of remaining) {
+        if (msg.type === "text") {
+          this.notifyOutput(msg.content);
+        }
+      }
+    });
   }
   /**
-   * Sets up a stream handler that converts chunks to strings and notifies callbacks.
+   * Sets up a raw stream handler that passes text directly to callbacks.
+   * Used for stderr which contains error messages (not JSONL).
    */
-  setupStreamHandler(stream) {
+  setupRawStreamHandler(stream) {
     stream.on("data", (chunk) => {
       const text = chunk.toString();
       this.notifyOutput(text);
@@ -1744,7 +1850,6 @@ var ClaudeRunnerImpl = class {
       this.process.kill("SIGTERM");
       this.process = null;
     }
-    this.cleanupTempFile();
   }
   /**
    * Returns whether a Claude process is currently running.
@@ -1810,12 +1915,12 @@ function killAllRunners() {
 }
 
 // src/services/promptBuilder.ts
-import { join as join6 } from "path";
+import { join as join5 } from "path";
 function buildWorkflowStartPrompt(context) {
   const { story, projectDir: projectDir2 } = context;
-  const storyDir = join6(projectDir2, "docs", "stories", story.slug);
-  const researchContent = readFileSafe(join6(storyDir, "research-notes.md"));
-  const designContent = readFileSafe(join6(storyDir, "design.md"));
+  const storyDir = join5(projectDir2, "docs", "stories", story.slug);
+  const researchContent = readFileSafe(join5(storyDir, "research-notes.md"));
+  const designContent = readFileSafe(join5(storyDir, "design.md"));
   const prompt = `You are working on an engineering story. Please work through the engineering process phases to generate implementation tasks.
 
 ## Story Information
@@ -2129,8 +2234,8 @@ function App({
 import { jsx as jsx13 } from "react/jsx-runtime";
 var inkInstance = null;
 function validateStory(projectDir2, storySlug) {
-  const storyDir = join7(projectDir2, "docs", "stories", storySlug);
-  const workflowStatePath = join7(storyDir, "workflow-state.json");
+  const storyDir = join6(projectDir2, "docs", "stories", storySlug);
+  const workflowStatePath = join6(storyDir, "workflow-state.json");
   if (!existsSync2(storyDir)) {
     return `Story not found: ${storySlug}`;
   }

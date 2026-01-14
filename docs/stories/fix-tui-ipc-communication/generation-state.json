@@ -1,0 +1,48 @@
+{
+  "slug": "fix-tui-ipc-communication",
+  "rawInput": "fix the tui package, it doesn't work. I think the method of piping input and output is flawed and destined for failure. maybe we should try different approaches for communicating between the processes (TUI <-> claude code CLI)",
+  "generatedAt": "2026-01-14T00:00:00.000Z",
+  "status": "draft",
+  "assumptionCount": 12,
+  "highConfidenceAssumptions": 8,
+  "mediumConfidenceAssumptions": 4,
+  "openQuestions": 7,
+  "acceptanceCriteria": {
+    "mustHave": 6,
+    "shouldHave": 3,
+    "niceToHave": 3
+  },
+  "edgeCases": 12,
+  "researchFindings": {
+    "currentApproach": "temp file + shell piping (cat file | claude --print)",
+    "provenAlternative": "Claude CLI -p flag (used by loop.sh)",
+    "ipcMechanismsEvaluated": [
+      "Unix domain sockets",
+      "HTTP/WebSocket",
+      "node-ipc package",
+      "Native IPC channels",
+      "Improved file-based IPC",
+      "Claude CLI -p flag (recommended)"
+    ],
+    "codeLocations": {
+      "primaryIssue": "packages/tui/src/services/claudeRunner.ts:84-166",
+      "orchestrator": "packages/tui/src/services/workflowOrchestrator.ts:216",
+      "referenceImplementation": "scripts/loop.sh:429"
+    }
+  },
+  "keyInsights": [
+    "Code comment already acknowledges stdin reliability issues",
+    "loop.sh uses proven -p flag pattern successfully",
+    "User wants to move away from file-based IPC",
+    "ARG_MAX may limit extremely large prompts (>500KB)",
+    "This is refinement, not complete rewrite",
+    "Reliability prioritized over performance"
+  ],
+  "verificationNeeded": [
+    "Exact failure symptoms and frequency",
+    "Error logs from failed runs",
+    "Does loop.sh have same issues?",
+    "Typical prompt sizes in usage",
+    "Target platforms and Claude CLI version"
+  ]
+}
