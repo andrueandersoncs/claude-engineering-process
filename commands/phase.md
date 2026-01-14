@@ -17,8 +17,7 @@ description: Jump to or review a specific phase of the engineering process. Use 
 | `design` | Architecture decisions, API design, data modeling |
 | `decompose` | Break work into implementable tasks |
 | `implement` | Write code and tests following the design |
-| `validate` | Review changes, run tests, verify acceptance criteria |
-| `deploy` | Release to production, monitor for issues |
+| `validate` | Review changes, run tests, verify acceptance criteria (workflow completes here) |
 
 ## Actions
 
@@ -53,8 +52,7 @@ When completing a phase:
 | design | ✅ YES | `design.md` complete, no stuck points |
 | decompose | ✅ YES | `tasks.md` complete with test references |
 | implement | ✅ YES | All tasks done, tests pass |
-| validate | ✅ YES | All tests pass, zero critical/major issues |
-| deploy | ❌ NO | User must authorize production deployment |
+| validate | ✅ YES | All tests pass, zero critical/major issues - workflow completes |
 
 ### Auto-Advance Flow
 

@@ -3,13 +3,13 @@
  *
  * Displays story information and progress at the top of the dashboard:
  * - Story slug and title
- * - Current phase and phase number (e.g., "Phase: 6/8 (implement)")
- * - PhaseProgress component showing all 8 phases
+ * - Current phase and phase number (e.g., "Phase: 6/7 (implement)")
+ * - PhaseProgress component showing all 7 phases
  * - Task progress bar with percentage
  *
  * Visual design (from design.md):
- *   Story: terminal-ui-implementation    Phase: 6/8 (implement)
- *   Progress: 1 2 3 4 5 [6] 7 8
+ *   Story: terminal-ui-implementation    Phase: 6/7 (implement)
+ *   Progress: 1 2 3 4 5 [6] 7
  *   Tasks:    ████████████░░░░ 75% (12/16)
  */
 

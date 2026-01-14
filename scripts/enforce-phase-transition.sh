@@ -194,46 +194,6 @@ case "$CURRENT_PHASE->$TARGET_PHASE" in
         echo -e "${GREEN}✓ Validation passed, allowing transition to validate${NC}" >&2
         ;;
 
-    "validate->deploy")
-        # Must pass mutation tests and fuzzing before deploy
-        log_info "Phase transition: validate -> deploy"
-        log_info "Running extended verification suite..."
-
-        # Run mutation tests (quick mode for gate)
-        if [ -x "$SCRIPT_DIR/run-mutation-tests.sh" ]; then
-            log_info "Running mutation tests..."
-            if ! "$SCRIPT_DIR/run-mutation-tests.sh" --quick 2>&1; then
-                EXIT_CODE=$?
-                if [ $EXIT_CODE -eq 1 ]; then
-                    log_block "Cannot transition to deploy: mutation score below threshold"
-                    echo "Run 'run-mutation-tests.sh' to see details" >&2
-                    echo "Mutation score must meet threshold before deployment." >&2
-                    exit 2
-                elif [ $EXIT_CODE -eq 2 ]; then
-                    log_info "Mutation testing not configured - skipping"
-                fi
-            fi
-        fi
-
-        # Run fuzzer (quick mode for gate)
-        if [ -x "$SCRIPT_DIR/run-fuzzer.sh" ]; then
-            log_info "Running fuzz tests..."
-            if ! "$SCRIPT_DIR/run-fuzzer.sh" --quick 2>&1; then
-                EXIT_CODE=$?
-                if [ $EXIT_CODE -eq 1 ]; then
-                    log_block "Cannot transition to deploy: fuzzing found issues"
-                    echo "Run 'run-fuzzer.sh' to see details" >&2
-                    echo "Fix fuzzing issues before deployment." >&2
-                    exit 2
-                elif [ $EXIT_CODE -eq 2 ]; then
-                    log_info "Fuzzing not configured - skipping"
-                fi
-            fi
-        fi
-
-        echo -e "${GREEN}✓ Extended verification passed, allowing transition to deploy${NC}" >&2
-        ;;
-
     "research->scope"|"scope->design"|"design->decompose"|"decompose->implement")
         # These transitions have lighter gates - just check artifacts exist
         log_info "Phase transition: $CURRENT_PHASE -> $TARGET_PHASE"

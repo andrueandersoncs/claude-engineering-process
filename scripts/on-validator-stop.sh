@@ -158,7 +158,7 @@ EOF
 if [ "$OVERALL_STATUS" = "FAILED" ]; then
     echo ""
     echo -e "${RED}Extended verification failed for $RISK_LEVEL-risk change.${NC}"
-    echo -e "Fix the issues before proceeding to deploy."
+    echo -e "Fix the issues before completing the workflow."
 fi
 
 exit 0

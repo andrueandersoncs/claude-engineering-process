@@ -247,18 +247,18 @@ describe('selectCurrentPhaseIndex', () => {
     expect(selectCurrentPhaseIndex(state)).toBe(6);
   });
 
-  it('returns 8 for deploy phase', () => {
+  it('returns 7 for validate phase', () => {
     const state = createMockState({
       currentStory: {
         story: 'Test',
         slug: 'test',
         source: 'direct',
-        currentPhase: 'deploy',
-        completedPhases: ['understand', 'research', 'scope', 'design', 'decompose', 'implement', 'validate'],
+        currentPhase: 'validate',
+        completedPhases: ['understand', 'research', 'scope', 'design', 'decompose', 'implement'],
         startedAt: new Date().toISOString(),
       },
     });
-    expect(selectCurrentPhaseIndex(state)).toBe(8);
+    expect(selectCurrentPhaseIndex(state)).toBe(7);
   });
 
   it('returns 0 when no story is loaded', () => {

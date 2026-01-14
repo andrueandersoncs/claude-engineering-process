@@ -6,7 +6,7 @@
  */
 
 /**
- * The 8 phases of the engineering process workflow.
+ * The 7 phases of the engineering process workflow.
  */
 export type Phase =
   | 'understand'
@@ -15,8 +15,7 @@ export type Phase =
   | 'design'
   | 'decompose'
   | 'implement'
-  | 'validate'
-  | 'deploy';
+  | 'validate';
 
 /**
  * Jobs To Be Done (JTBD) context for understanding the user's goal.

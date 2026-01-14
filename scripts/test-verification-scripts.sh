@@ -390,15 +390,6 @@ test_validate_criteria_decompose_with_tasks() {
     assert_exit_code 0 "$exit_code" "validate-criteria: decompose with tasks passes"
 }
 
-test_validate_criteria_deploy_blocks() {
-    create_story "deploy-story" "deploy"
-    local output exit_code=0
-    output=$("$SCRIPT_DIR/validate-criteria.sh" "deploy" "deploy-story" 2>&1 </dev/null) || exit_code=$?
-    # Deploy phase always blocks (requires user authorization)
-    assert_exit_code 1 "$exit_code" "validate-criteria: deploy phase blocks"
-    assert_json_field "$output" ".recommendation" "BLOCK" "validate-criteria: deploy returns BLOCK"
-}
-
 test_verify_requirements_clean() {
     create_story "clean-reqs" "research"
     cat > "$TEST_TMPDIR/docs/stories/clean-reqs/requirements.md" << 'REQEOF'
@@ -1030,7 +1021,6 @@ run_test "validate-criteria scope no research" test_validate_criteria_scope_with
 run_test "validate-criteria scope with research" test_validate_criteria_scope_with_research
 run_test "validate-criteria decompose no tasks" test_validate_criteria_decompose_without_tasks
 run_test "validate-criteria decompose with tasks" test_validate_criteria_decompose_with_tasks
-run_test "validate-criteria deploy blocks" test_validate_criteria_deploy_blocks
 echo ""
 
 echo -e "${BLUE}━━━ Testing: verify-requirements.sh ━━━${NC}"

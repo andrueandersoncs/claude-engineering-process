@@ -1,10 +1,10 @@
 # Engineering Process Plugin for Claude Code
 
-A structured software engineering workflow plugin that guides Claude Code through the complete journey from user story to deployed software.
+A structured software engineering workflow plugin that guides Claude Code through the complete journey from user story to validated implementation.
 
 ## Overview
 
-This plugin implements a systematic 8-phase engineering process:
+This plugin implements a systematic 7-phase engineering process:
 
 1. **Understand** - Comprehend requirements, identify gaps
 2. **Research** - Explore codebase, verify assumptions
@@ -12,8 +12,7 @@ This plugin implements a systematic 8-phase engineering process:
 4. **Design** - Architecture decisions, documentation
 5. **Decompose** - Break into implementable tasks
 6. **Implement** - Write code and tests
-7. **Validate** - Review, test, verify criteria
-8. **Deploy** - Release and monitor
+7. **Validate** - Review, test, verify criteria (workflow completes here; deployment is handled by users)
 
 Each phase has:
 - Specialized agents with appropriate tool access
@@ -261,7 +260,7 @@ claude-engineering-process/
 This plugin enforces a disciplined approach:
 - Research before design
 - Design before implementation
-- Validation before deployment
+- Validation before completion
 
 ## License
 

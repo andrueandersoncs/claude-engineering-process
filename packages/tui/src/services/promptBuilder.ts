@@ -165,7 +165,7 @@ Design document already exists at docs/stories/${story.slug}/design.md
 
 ## Instructions
 
-Work through the 8-phase engineering process starting from the "${story.currentPhase}" phase:
+Work through the 7-phase engineering process starting from the "${story.currentPhase}" phase:
 
 1. **Understand** - Comprehend requirements, identify gaps
 2. **Research** - Explore codebase, verify assumptions
@@ -174,7 +174,6 @@ Work through the 8-phase engineering process starting from the "${story.currentP
 5. **Decompose** - Break into implementable tasks
 6. **Implement** - Write code and tests
 7. **Validate** - Review, test, verify criteria
-8. **Deploy** - Release and monitor
 
 The story directory and workflow-state.json already exist at docs/stories/${story.slug}/ - do not recreate them.
 

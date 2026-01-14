@@ -3,7 +3,7 @@
  *
  * Displayed when a story has been created but has no tasks yet.
  * Guides the user to start the engineering workflow which will
- * generate tasks through the 8-phase process.
+ * generate tasks through the 7-phase process.
  */
 
 import React from 'react';
@@ -19,7 +19,6 @@ const PHASE_DESCRIPTIONS: Record<string, string> = {
   decompose: 'Break into implementable tasks',
   implement: 'Write code and tests',
   validate: 'Review, test, verify criteria',
-  deploy: 'Release and monitor',
 };
 
 interface SetupViewProps {

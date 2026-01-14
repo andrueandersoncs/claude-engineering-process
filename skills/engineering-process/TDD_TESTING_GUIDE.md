@@ -33,8 +33,6 @@ These tests:
 │    └─ REFACTOR: Clean up while keeping tests green             │
 ├─────────────────────────────────────────────────────────────────┤
 │ 7. VALIDATE: Verify coverage, review test quality              │
-├─────────────────────────────────────────────────────────────────┤
-│ 8. DEPLOY: Run full test suite before and after deployment     │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -125,11 +123,6 @@ These tests:
 - Check coverage metrics
 - Review test quality (not just quantity)
 - Verify edge cases are covered
-
-### Phase 8: Deploy
-- Run tests against staging/preview environment
-- Run smoke tests after deployment
-- Monitor for test failures in production
 
 ## Test Quality Checklist
 

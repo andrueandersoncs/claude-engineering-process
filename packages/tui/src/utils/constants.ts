@@ -7,7 +7,7 @@
 import type { Phase } from '../types';
 
 /**
- * The 8 phases of the engineering process in order.
+ * The 7 phases of the engineering process in order.
  */
 export const PHASES: readonly Phase[] = [
   'understand',
@@ -17,7 +17,6 @@ export const PHASES: readonly Phase[] = [
   'decompose',
   'implement',
   'validate',
-  'deploy',
 ] as const;
 
 /**
@@ -31,7 +30,6 @@ export const PHASE_LABELS: Record<Phase, string> = {
   decompose: 'Decompose',
   implement: 'Implement',
   validate: 'Validate',
-  deploy: 'Deploy',
 };
 
 /**

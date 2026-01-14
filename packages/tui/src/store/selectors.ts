@@ -46,7 +46,7 @@ export function selectNextTask(state: TUIStore): Task | null {
 }
 
 /**
- * Returns the 1-indexed phase number (1-8) for the current phase.
+ * Returns the 1-indexed phase number (1-7) for the current phase.
  * Returns 0 if no story is loaded.
  */
 export function selectCurrentPhaseIndex(state: TUIStore): number {
@@ -54,6 +54,6 @@ export function selectCurrentPhaseIndex(state: TUIStore): number {
     return 0;
   }
   const phaseIndex = PHASES.indexOf(state.currentStory.currentPhase);
-  // Return 1-indexed (1-8), or 0 if not found
+  // Return 1-indexed (1-7), or 0 if not found
   return phaseIndex === -1 ? 0 : phaseIndex + 1;
 }

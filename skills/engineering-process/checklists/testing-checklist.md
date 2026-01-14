@@ -163,26 +163,6 @@ REFACTOR: Clean up code while tests stay green
 
 ---
 
-## Phase 8: Deploy
-
-### Pre-Deployment Test Gate
-- [ ] All E2E tests pass in CI
-- [ ] All unit tests pass in CI
-- [ ] Test coverage meets minimum thresholds
-- [ ] No failing tests are skipped
-
-### Post-Deployment Verification
-- [ ] E2E tests run against staging/production
-- [ ] Smoke tests pass
-- [ ] No regressions detected
-
-```bash
-# Run E2E tests against deployed environment
-PLAYWRIGHT_BASE_URL=https://staging.example.com npx playwright test
-```
-
----
-
 ## Anti-Patterns to Avoid
 
 ### Testing Anti-Patterns

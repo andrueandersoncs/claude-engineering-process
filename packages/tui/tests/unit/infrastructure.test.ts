@@ -57,7 +57,7 @@ describe('Test Infrastructure', () => {
     expect(typeof state.startedAt).toBe('string');
 
     // Verify phase values are valid
-    const validPhases = ['understand', 'research', 'scope', 'design', 'decompose', 'implement', 'validate', 'deploy'];
+    const validPhases = ['understand', 'research', 'scope', 'design', 'decompose', 'implement', 'validate'];
     expect(validPhases).toContain(state.currentPhase);
     for (const phase of state.completedPhases) {
       expect(validPhases).toContain(phase);

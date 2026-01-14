@@ -1,6 +1,6 @@
 ---
 name: engineering-process
-description: Orchestrate a complete software engineering workflow from user story to deployment. Use when starting work on features, bugs, or tasks that need structured implementation with research, design, implementation, and validation phases.
+description: Orchestrate a complete software engineering workflow from user story to validated implementation. Use when starting work on features, bugs, or tasks that need structured implementation with research, design, implementation, and validation phases.
 allowed-tools: Read, Task, Bash, Write, Edit, Grep, Glob
 model: sonnet
 user-invocable: true
@@ -8,7 +8,7 @@ user-invocable: true
 
 # Engineering Process Orchestrator
 
-You are orchestrating a structured software engineering workflow that transforms a user story into working, deployed software.
+You are orchestrating a structured software engineering workflow that transforms a user story into working, validated software.
 
 ## Philosophy
 
@@ -41,7 +41,6 @@ DESIGN     → Design test architecture alongside feature architecture
 DECOMPOSE  → Every task MUST reference its required tests
 IMPLEMENT  → Write E2E test → Verify it FAILS → Implement → Verify it PASSES
 VALIDATE   → Run full test suite, verify coverage
-DEPLOY     → Run tests before and after deployment
 ```
 
 ### Testing Guides
@@ -184,7 +183,6 @@ The `<story-slug>` is derived from the story title (e.g., "add-user-authenticati
 | 5 | Decompose | `architect` | Break into tasks | Task breakdown | **Each task MUST reference its tests** |
 | 6 | Implement | `loop.sh` or `implementer` | Write tests, then code | **Passing E2E tests** + code | **Write failing test FIRST** |
 | 7 | Validate | `reviewer` | Verify quality | Review approval | Verify test coverage & quality |
-| 8 | Deploy | `implementer` | Release | Deployed feature | Run full test suite pre/post deploy |
 
 > **IMPORTANT**: Phase 6 supports two execution modes: **loop.sh** (recommended for autonomous execution with fresh context per task) or **Task tool delegation** (for interactive sessions). See [Phase 6: Implementation Workflow](#phase-6-implementation-workflow) section below.
 
@@ -197,7 +195,6 @@ This workflow uses intelligent delegation to reduce user friction while preservi
 | Phase | Why User Required |
 |-------|-------------------|
 | **1: Understand** | User Story refinement is the contract. User must confirm the Job To Be Done (JTBD), verify acceptance criteria, resolve ambiguous scenarios, and answer blocking questions. The job is the real contract—features are negotiable. |
-| **8: Deploy (Production)** | Production deployment requires explicit user authorization. |
 
 ### Auto-Advanceable Phases (Delegated to Agents or Loop)
 
@@ -208,7 +205,7 @@ This workflow uses intelligent delegation to reduce user friction while preservi
 | **4: Design** | `architect` | `design.md` exists, no simulation stuck points, test architecture defined |
 | **5: Decompose** | `architect` | `tasks.md` exists with E2E tests first, each task has completion criteria |
 | **6: Implement** | `loop.sh` (preferred) or `implementer` | All tasks `[x]` complete, E2E tests pass, linting passes |
-| **7: Validate** | `reviewer` + `validator` | All tests pass, zero critical/major issues, acceptance criteria mapped to tests |
+| **7: Validate** | `reviewer` + `validator` | All tests pass, zero critical/major issues, acceptance criteria mapped to tests, workflow complete |
 
 ### Delegation Agents
 
@@ -216,7 +213,7 @@ This workflow uses intelligent delegation to reduce user friction while preservi
 |-------|---------|-------------|
 | `explorer` | Read-only codebase exploration | Phase 2 (Research) |
 | `architect` | Solution design and task breakdown | Phases 4-5 (Design, Decompose) |
-| `implementer` | Code and test implementation | Phases 6, 8 (Implement, Deploy) |
+| `implementer` | Code and test implementation | Phase 6 (Implement) |
 | `reviewer` | Code review and quality verification | Phase 7 (Validate) |
 | `validator` | Programmatic phase completion checks | Phase transitions (invoke explicitly via Task tool) |
 | `scope-analyst` | Classify scope as auto-approvable vs. user-required | Phase 3 (Scope) when scope is ambiguous |
@@ -436,7 +433,6 @@ Load these on-demand (not all at once):
 - [Phase 5: Decompose](phases/5-decompose.md)
 - [Phase 6: Implement](phases/6-implement.md) - **Iterative task delegation**
 - [Phase 7: Validate](phases/7-validate.md)
-- [Phase 8: Deploy](phases/8-deploy.md)
 
 ## Phase 6: Implementation Workflow
 
@@ -567,7 +563,7 @@ These are enforced by hooks, but you should also verify:
 - **Test PASSES after implementation completes**
 - No feature code without corresponding tests
 
-### Before Deployment
+### Before Completion
 - **All tests passing (E2E, unit, integration)**
 - Review completed and approved
 - Acceptance criteria verified **via passing tests**

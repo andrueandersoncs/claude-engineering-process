@@ -1,6 +1,6 @@
 {
   "name": "engineering-process",
-  "description": "Structured software engineering workflow from user story to deployment. Orchestrates research, design, implementation, and validation phases with specialized agents and quality gates.",
+  "description": "Structured software engineering workflow from user story to validated implementation. Orchestrates research, design, implementation, and validation phases with specialized agents and quality gates.",
   "version": "1.0.0",
   "author": {
     "name": "Andrue Anderson"

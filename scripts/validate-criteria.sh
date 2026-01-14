@@ -246,12 +246,6 @@ case "$PHASE" in
         fi
         ;;
 
-    "deploy")
-        # Phase 8: Cannot auto-advance to production
-        add_criterion "User authorization required" "WARN" "" "false" "Production deployment requires explicit user authorization"
-        HAS_CRITICAL_FAIL=true  # Force block for production
-        ;;
-
     "complete")
         add_criterion "Workflow complete" "PASS" "All phases done"
         ;;
@@ -288,8 +282,7 @@ get_next_phase() {
         design)      echo "decompose" ;;
         decompose)   echo "implement" ;;
         implement)   echo "validate" ;;
-        validate)    echo "deploy" ;;
-        deploy)      echo "complete" ;;
+        validate)    echo "complete" ;;
         *)           echo "complete" ;;
     esac
 }

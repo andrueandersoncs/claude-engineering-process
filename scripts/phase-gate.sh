@@ -163,10 +163,6 @@ case "$ACTION" in
                 check_precondition "Task breakdown exists" "test -f '$STORY_DIR/tasks.md'" || PRECONDITIONS_MET=false
                 check_precondition "Implementation tasks complete" "! grep -q '^\- \[ \].*Task [0-9]' '$STORY_DIR/tasks.md' 2>/dev/null" || PRECONDITIONS_MET=false
                 ;;
-            "deploy")
-                echo "Deploy phase preconditions:"
-                check_precondition "Validation phase complete" "echo '$COMPLETED_PHASES' | grep -q 'validate'" || PRECONDITIONS_MET=false
-                ;;
         esac
 
         if [ "$PRECONDITIONS_MET" = true ]; then
@@ -278,10 +274,7 @@ case "$ACTION" in
             "validate")
                 echo "  - Ensure code review is complete"
                 echo "  - Ensure all tests pass"
-                ;;
-            "deploy")
-                echo "  - Ensure deployment is successful"
-                echo "  - Ensure monitoring is in place"
+                echo "  - Workflow completes when validation passes"
                 ;;
         esac
 

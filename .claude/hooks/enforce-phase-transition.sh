@@ -87,7 +87,7 @@ log_info() {
 # Phase transition enforcement rules
 case "$CURRENT_PHASE->$TARGET_PHASE" in
     "understand->research")
-        # Must pass requirements verification before leaving understand
+        # Must pass requirements verification AND formal verification before leaving understand
         log_info "Phase transition: understand -> research"
         log_info "Running requirements verification..."
 
@@ -113,7 +113,68 @@ case "$CURRENT_PHASE->$TARGET_PHASE" in
             fi
         fi
 
-        echo -e "${GREEN}✓ Requirements verified, allowing transition to research${NC}" >&2
+        # === FORMAL VERIFICATION CHECKS ===
+        log_info "Running formal verification checks..."
+
+        # Check 1: constraint-analysis.json
+        if [ -f "$STORY_DIR/constraint-analysis.json" ]; then
+            SAT_RESULT=$(jq -r '.satisfiability // "UNKNOWN"' "$STORY_DIR/constraint-analysis.json" 2>/dev/null || echo "UNKNOWN")
+            if [ "$SAT_RESULT" = "UNSAT" ]; then
+                log_block "Cannot transition to research: constraints are UNSATISFIABLE"
+                echo "Review constraint-analysis.json for unsat_core" >&2
+                UNSAT_CORE=$(jq -r '.unsat_core | join(", ")' "$STORY_DIR/constraint-analysis.json" 2>/dev/null || echo "unknown")
+                echo "Conflicting constraints: $UNSAT_CORE" >&2
+                exit 2
+            fi
+            log_info "Constraint analysis: $SAT_RESULT"
+        else
+            log_info "No constraint-analysis.json found (run requirements-verifier agent)"
+        fi
+
+        # Check 2: adversarial-cases.md (REQUIRED)
+        if [ ! -f "$STORY_DIR/adversarial-cases.md" ]; then
+            log_block "Cannot transition to research: adversarial testing not completed"
+            echo "Invoke the adversary agent to generate adversarial test cases." >&2
+            echo "At least 3 adversarial cases are required before proceeding." >&2
+            exit 2
+        fi
+        # Count cases (look for ### Case pattern or ADV- pattern)
+        CASE_COUNT=$(grep -cE "^### Case|^### ADV-|^\*\*id\*\*: \"ADV-" "$STORY_DIR/adversarial-cases.md" 2>/dev/null || echo "0")
+        if [ "$CASE_COUNT" -lt 3 ]; then
+            log_block "Cannot transition to research: fewer than 3 adversarial cases (found: $CASE_COUNT)"
+            echo "Adversary agent must generate at least 3 test cases." >&2
+            exit 2
+        fi
+        log_info "Adversarial testing: $CASE_COUNT cases generated"
+
+        # Check 3: preference-check.json (warn on hard conflicts)
+        if [ -f "$STORY_DIR/preference-check.json" ]; then
+            HARD_CONFLICTS=$(jq '[.preference_conflicts[]? | select(.conflicts_with.severity == "hard")] | length' "$STORY_DIR/preference-check.json" 2>/dev/null || echo "0")
+            if [ "$HARD_CONFLICTS" -gt 0 ]; then
+                log_block "Cannot transition to research: $HARD_CONFLICTS hard preference conflicts detected"
+                echo "Review preference-check.json and resolve conflicts with user." >&2
+                exit 2
+            fi
+            SOFT_CONFLICTS=$(jq '[.preference_conflicts[]? | select(.conflicts_with.severity == "soft" or .conflicts_with.severity == null)] | length' "$STORY_DIR/preference-check.json" 2>/dev/null || echo "0")
+            if [ "$SOFT_CONFLICTS" -gt 0 ]; then
+                log_info "Soft preference conflicts: $SOFT_CONFLICTS (allowing with warning)"
+            fi
+        fi
+
+        # Check 4: ltl-verification.json (if workflow, check for deadlocks)
+        if [ -f "$STORY_DIR/ltl-verification.json" ]; then
+            DEADLOCKS=$(jq '.verification_result.deadlocks | length' "$STORY_DIR/ltl-verification.json" 2>/dev/null || echo "0")
+            if [ "$DEADLOCKS" -gt 0 ]; then
+                log_block "Cannot transition to research: workflow has $DEADLOCKS deadlock(s)"
+                echo "Review ltl-verification.json for deadlock states." >&2
+                DEADLOCK_STATES=$(jq -r '.verification_result.deadlocks | join(", ")' "$STORY_DIR/ltl-verification.json" 2>/dev/null || echo "unknown")
+                echo "Deadlock states: $DEADLOCK_STATES" >&2
+                exit 2
+            fi
+            log_info "LTL verification: no deadlocks"
+        fi
+
+        echo -e "${GREEN}✓ Requirements and formal verification passed, allowing transition to research${NC}" >&2
         ;;
 
     "implement->validate")
@@ -131,46 +192,6 @@ case "$CURRENT_PHASE->$TARGET_PHASE" in
         fi
 
         echo -e "${GREEN}✓ Validation passed, allowing transition to validate${NC}" >&2
-        ;;
-
-    "validate->deploy")
-        # Must pass mutation tests and fuzzing before deploy
-        log_info "Phase transition: validate -> deploy"
-        log_info "Running extended verification suite..."
-
-        # Run mutation tests (quick mode for gate)
-        if [ -x "$SCRIPT_DIR/run-mutation-tests.sh" ]; then
-            log_info "Running mutation tests..."
-            if ! "$SCRIPT_DIR/run-mutation-tests.sh" --quick 2>&1; then
-                EXIT_CODE=$?
-                if [ $EXIT_CODE -eq 1 ]; then
-                    log_block "Cannot transition to deploy: mutation score below threshold"
-                    echo "Run 'run-mutation-tests.sh' to see details" >&2
-                    echo "Mutation score must meet threshold before deployment." >&2
-                    exit 2
-                elif [ $EXIT_CODE -eq 2 ]; then
-                    log_info "Mutation testing not configured - skipping"
-                fi
-            fi
-        fi
-
-        # Run fuzzer (quick mode for gate)
-        if [ -x "$SCRIPT_DIR/run-fuzzer.sh" ]; then
-            log_info "Running fuzz tests..."
-            if ! "$SCRIPT_DIR/run-fuzzer.sh" --quick 2>&1; then
-                EXIT_CODE=$?
-                if [ $EXIT_CODE -eq 1 ]; then
-                    log_block "Cannot transition to deploy: fuzzing found issues"
-                    echo "Run 'run-fuzzer.sh' to see details" >&2
-                    echo "Fix fuzzing issues before deployment." >&2
-                    exit 2
-                elif [ $EXIT_CODE -eq 2 ]; then
-                    log_info "Fuzzing not configured - skipping"
-                fi
-            fi
-        fi
-
-        echo -e "${GREEN}✓ Extended verification passed, allowing transition to deploy${NC}" >&2
         ;;
 
     "research->scope"|"scope->design"|"design->decompose"|"decompose->implement")

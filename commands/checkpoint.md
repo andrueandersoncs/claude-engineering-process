@@ -57,18 +57,13 @@ Read `docs/stories/<story-slug>/workflow-state.json` to determine:
 - [ ] Code follows project conventions
 - [ ] No TODO comments left unaddressed
 
-#### Validate Phase
+#### Validate Phase (Final Phase)
 - [ ] Code review completed (or self-reviewed with reviewer agent)
 - [ ] All tests pass
 - [ ] Acceptance criteria verified
 - [ ] No security issues identified
 - [ ] Documentation updated
-
-#### Deploy Phase
-- [ ] Changes deployed successfully
-- [ ] Monitoring in place
-- [ ] No errors in production logs
-- [ ] Stakeholders notified
+- [ ] Workflow completes when validation passes (users handle deployment)
 
 ### 3. Report Results
 

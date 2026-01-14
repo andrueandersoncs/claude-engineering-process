@@ -5,9 +5,9 @@ Verify that the implementation meets requirements, is secure, performs well, and
 
 **CRITICAL: Validation primarily means verifying that all tests pass and provide adequate coverage.**
 
-## ✅ AUTO-ADVANCEABLE PHASE
+## ✅ FINAL PHASE
 
-This phase can auto-advance to Deploy when ALL conditions are met:
+This phase completes the workflow when ALL conditions are met:
 
 | Criterion | Check |
 |-----------|-------|
@@ -17,11 +17,11 @@ This phase can auto-advance to Deploy when ALL conditions are met:
 | Zero major issues | `reviewer` finds no MAJOR severity |
 | Acceptance criteria mapped | Each criterion has a passing test |
 
-**Auto-advance:** If all above pass, proceed to Deploy (staging only - production requires user).
+**Complete:** If all above pass, mark workflow as complete.
 
 **Block and report:** If any critical/major issues found, or tests fail.
 
-**Minor issues:** Warn but allow advance (logged for future cleanup).
+**Minor issues:** Warn but allow completion (logged for future cleanup).
 
 ## Agent
 
@@ -315,7 +315,7 @@ Status: [APPROVED / CHANGES REQUESTED]
 ## Handling Review Feedback
 
 ### If Approved
-1. Proceed to deploy phase
+1. Mark workflow as complete
 2. Update workflow state
 
 ### If Changes Requested
@@ -364,5 +364,5 @@ Status: [APPROVED / CHANGES REQUESTED]
 5. **Manual-Only Validation** - Relying on manual testing instead of automated tests
 6. **Ignoring Test Coverage** - Not verifying that tests actually cover the acceptance criteria
 
-## Next Phase
-Proceed to [Phase 8: Deploy](8-deploy.md) when validation passes.
+## Completion
+When validation passes, the workflow is complete. Users handle deployment on their own.

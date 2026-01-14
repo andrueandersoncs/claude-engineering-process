@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **Claude Code Plugin** called `engineering-process` that implements a structured 8-phase software engineering workflow. It orchestrates Claude through the complete journey from user story to deployed software using specialized agents, quality gates, and progressive context loading.
+This is a **Claude Code Plugin** called `engineering-process` that implements a structured 7-phase software engineering workflow. It orchestrates Claude through the complete journey from user story to validated implementation using specialized agents, quality gates, and progressive context loading.
 
 ## CRITICAL: Test-Driven Development
 
@@ -29,7 +29,7 @@ The plugin is documentation-driven (Markdown + JSON + Bash scripts) with no comp
 - **Hooks** (`hooks/`): Pre/post operation validation via `hooks.json`
 - **Scripts** (`scripts/`): Bash validation scripts for phase gates
 
-### The 8-Phase Engineering Process (Test-Driven)
+### The 7-Phase Engineering Process (Test-Driven)
 
 1. **Understand** - Comprehend requirements → extract testable acceptance criteria
 2. **Research** - Explorer agent analyzes codebase → discover test patterns
@@ -37,8 +37,7 @@ The plugin is documentation-driven (Markdown + JSON + Bash scripts) with no comp
 4. **Design** - Architect creates design → design test architecture
 5. **Decompose** - Break into tasks → each task references required tests
 6. **Implement** - **Iterative task delegation** (Red→Green→Refactor per task)
-7. **Validate** - Reviewer verifies quality → verify test coverage
-8. **Deploy** - Release and monitor → run full test suite before/after
+7. **Validate** - Reviewer verifies quality → verify test coverage (workflow completes here; deployment is handled by users)
 
 ### Phase 6: Iterative Implementation (Wiggum Pattern)
 

@@ -99,8 +99,8 @@ You do NOT need to manually run these - they happen automatically via hooks.
 - [ ] No TODO comments with FIXME/HACK/XXX in changed files
 - [ ] Linting passes
 
-### Phase 7: Validate
-**Can auto-advance if:**
+### Phase 7: Validate (Final Phase)
+**Workflow completes when:**
 - [ ] All tests pass (E2E, unit, integration)
 - [ ] Zero critical issues in review
 - [ ] Zero major issues in review
@@ -109,13 +109,6 @@ You do NOT need to manually run these - they happen automatically via hooks.
   - **Low risk**: Fast checks pass (type checking, linting)
   - **Medium risk**: Property-based tests pass (if applicable), mutation score > 65%
   - **High/Critical risk**: Full mutation score > 80%, fuzzing completed (if input handling)
-
-### Phase 8: Deploy
-**Cannot auto-advance to production** - Requires user authorization
-**Can auto-deploy to staging if:**
-- [ ] All Phase 7 criteria met
-- [ ] Staging environment configured
-- [ ] No breaking changes detected
 
 ## Output Format
 
@@ -189,7 +182,6 @@ If hooks are not configured, run these manually:
 
 - **DO NOT** modify code or artifacts
 - **DO NOT** auto-advance Phase 1 (Understand) - user story requires human
-- **DO NOT** auto-deploy to production
 - **DO** run tests to verify they pass
 - **DO** check file existence and structure
 - **DO** provide clear evidence for each criterion

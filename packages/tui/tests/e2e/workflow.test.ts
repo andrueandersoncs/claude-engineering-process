@@ -102,7 +102,7 @@ describe('TUI Workflow E2E', () => {
       reject: false,
     });
 
-    // Should show phase numbers (1-8)
+    // Should show phase numbers (1-7)
     // The current phase (implement = 6) should be highlighted
     expect(result.stdout).toMatch(/6.*implement|implement.*6|\[6\]/i);
   });

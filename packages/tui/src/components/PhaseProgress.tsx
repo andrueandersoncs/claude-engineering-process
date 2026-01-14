@@ -1,12 +1,12 @@
 /**
- * PhaseProgress component - displays the 8-phase workflow progress indicator.
+ * PhaseProgress component - displays the 7-phase workflow progress indicator.
  *
- * Renders all 8 phases horizontally with visual distinction:
+ * Renders all 7 phases horizontally with visual distinction:
  * - Completed phases: green
  * - Current phase: bracketed and cyan
  * - Future phases: dimmed
  *
- * Example output: 1 2 3 [4] 5 6 7 8
+ * Example output: 1 2 3 [4] 5 6 7
  */
 
 import React from 'react';
@@ -20,7 +20,7 @@ interface PhaseProgressProps {
 }
 
 /**
- * PhaseProgress displays the 8-phase workflow progress indicator.
+ * PhaseProgress displays the 7-phase workflow progress indicator.
  *
  * Completed phases are shown in green, the current phase is bracketed
  * and highlighted in cyan, and future phases are dimmed.

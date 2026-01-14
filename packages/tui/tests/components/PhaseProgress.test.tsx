@@ -1,7 +1,7 @@
 /**
  * Component tests for PhaseProgress using ink-testing-library.
  *
- * These tests verify the PhaseProgress component renders the 8-phase workflow
+ * These tests verify the PhaseProgress component renders the 7-phase workflow
  * indicator correctly, highlighting the current phase and showing completed phases.
  *
  * Following TDD principles, these tests are written BEFORE the implementation exists,
@@ -23,10 +23,9 @@ type Phase =
   | 'design'
   | 'decompose'
   | 'implement'
-  | 'validate'
-  | 'deploy';
+  | 'validate';
 
-// All 8 phases in order
+// All 7 phases in order
 const ALL_PHASES: Phase[] = [
   'understand',
   'research',
@@ -35,12 +34,11 @@ const ALL_PHASES: Phase[] = [
   'decompose',
   'implement',
   'validate',
-  'deploy',
 ];
 
 describe('PhaseProgress', () => {
   describe('rendering all phases', () => {
-    it('renders all 8 phases', () => {
+    it('renders all 7 phases', () => {
       const { lastFrame } = render(
         <PhaseProgress
           currentPhase="understand"
@@ -49,7 +47,7 @@ describe('PhaseProgress', () => {
       );
 
       const output = lastFrame();
-      // Should contain phase numbers 1 through 8
+      // Should contain phase numbers 1 through 7
       expect(output).toContain('1');
       expect(output).toContain('2');
       expect(output).toContain('3');
@@ -57,10 +55,9 @@ describe('PhaseProgress', () => {
       expect(output).toContain('5');
       expect(output).toContain('6');
       expect(output).toContain('7');
-      expect(output).toContain('8');
     });
 
-    it('renders phases in correct order (1-8)', () => {
+    it('renders phases in correct order (1-7)', () => {
       const { lastFrame } = render(
         <PhaseProgress
           currentPhase="understand"
@@ -77,7 +74,6 @@ describe('PhaseProgress', () => {
       const pos5 = output.indexOf('5');
       const pos6 = output.indexOf('6');
       const pos7 = output.indexOf('7');
-      const pos8 = output.indexOf('8');
 
       // Verify order
       expect(pos1).toBeLessThan(pos2);
@@ -86,7 +82,6 @@ describe('PhaseProgress', () => {
       expect(pos4).toBeLessThan(pos5);
       expect(pos5).toBeLessThan(pos6);
       expect(pos6).toBeLessThan(pos7);
-      expect(pos7).toBeLessThan(pos8);
     });
   });
 
@@ -130,7 +125,7 @@ describe('PhaseProgress', () => {
     it('highlights current phase with brackets when on last phase', () => {
       const { lastFrame } = render(
         <PhaseProgress
-          currentPhase="deploy"
+          currentPhase="validate"
           completedPhases={[
             'understand',
             'research',
@@ -138,13 +133,12 @@ describe('PhaseProgress', () => {
             'design',
             'decompose',
             'implement',
-            'validate',
           ]}
         />
       );
 
-      // Current phase (8 = deploy) should be bracketed
-      expect(lastFrame()).toContain('[8]');
+      // Current phase (7 = validate) should be bracketed
+      expect(lastFrame()).toContain('[7]');
     });
 
     it('only brackets the current phase, not other phases', () => {
@@ -166,7 +160,6 @@ describe('PhaseProgress', () => {
       expect(output).not.toContain('[5]');
       expect(output).not.toContain('[6]');
       expect(output).not.toContain('[7]');
-      expect(output).not.toContain('[8]');
     });
   });
 
@@ -226,7 +219,7 @@ describe('PhaseProgress', () => {
     it('shows almost all phases completed when on last phase', () => {
       const { lastFrame } = render(
         <PhaseProgress
-          currentPhase="deploy"
+          currentPhase="validate"
           completedPhases={[
             'understand',
             'research',
@@ -234,22 +227,20 @@ describe('PhaseProgress', () => {
             'design',
             'decompose',
             'implement',
-            'validate',
           ]}
         />
       );
 
       const output = lastFrame();
       expect(output).toBeDefined();
-      // Phases 1-7 completed, 8 is current
+      // Phases 1-6 completed, 7 is current
       expect(output).toContain('1');
       expect(output).toContain('2');
       expect(output).toContain('3');
       expect(output).toContain('4');
       expect(output).toContain('5');
       expect(output).toContain('6');
-      expect(output).toContain('7');
-      expect(output).toContain('[8]');
+      expect(output).toContain('[7]');
     });
   });
 

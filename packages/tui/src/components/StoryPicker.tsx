@@ -41,7 +41,7 @@ interface StoryPickerProps {
 }
 
 /**
- * Get the phase number (1-8) for a given phase.
+ * Get the phase number (1-7) for a given phase.
  */
 function getPhaseNumber(phase: Phase): number {
   const index = PHASES.indexOf(phase);
@@ -79,7 +79,7 @@ function StoryItem({
       {/* Story details */}
       <Box paddingLeft={4}>
         <Text dimColor={!isSelected}>
-          Phase: {phaseNum}/8 ({story.phase})
+          Phase: {phaseNum}/7 ({story.phase})
         </Text>
         <Text> | </Text>
         <Text dimColor={!isSelected}>

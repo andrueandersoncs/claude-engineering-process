@@ -51,14 +51,6 @@ if [ "$CURRENT_PHASE" = "complete" ]; then
     exit 0
 fi
 
-# If in deploy phase and validation is complete, allow stop
-if [ "$CURRENT_PHASE" = "deploy" ]; then
-    VALIDATE_COMPLETE=$(echo "$COMPLETED_PHASES" | jq 'contains(["validate"])' 2>/dev/null || echo "false")
-    if [ "$VALIDATE_COMPLETE" = "true" ]; then
-        exit 0
-    fi
-fi
-
 # Backpressure enforcement (per WIGGUM.md: "downstream backpressure catches errors early")
 # Set COMPLETION_CHECK_WARN_ONLY=1 to disable blocking
 WARN_ONLY="${COMPLETION_CHECK_WARN_ONLY:-0}"

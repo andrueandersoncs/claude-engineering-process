@@ -101,7 +101,7 @@ describe('StoryPicker', () => {
       expect(lastFrame()).toMatch(/8\/8/);
     });
 
-    it('displays phase numbers (1-8)', () => {
+    it('displays phase numbers (1-7)', () => {
       const { lastFrame } = render(
         <StoryPicker
           stories={mockStories}
@@ -112,9 +112,9 @@ describe('StoryPicker', () => {
       );
 
       // implement is phase 6, design is phase 4, validate is phase 7
-      expect(lastFrame()).toMatch(/6\/8/);
-      expect(lastFrame()).toMatch(/4\/8/);
-      expect(lastFrame()).toMatch(/7\/8/);
+      expect(lastFrame()).toMatch(/6\/7/);
+      expect(lastFrame()).toMatch(/4\/7/);
+      expect(lastFrame()).toMatch(/7\/7/);
     });
   });
 
