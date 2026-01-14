@@ -1,0 +1,107 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SymbolicExecution",
+  "description": "Symbolic execution trace for code path analysis. Traces execution paths through code with symbolic inputs to find edge cases and missing guards.",
+  "type": "object",
+  "required": ["function", "file", "symbolic_inputs", "paths"],
+  "properties": {
+    "function": {
+      "type": "string",
+      "description": "Name of the function being analyzed"
+    },
+    "file": {
+      "type": "string",
+      "description": "File path containing the function"
+    },
+    "symbolic_inputs": {
+      "type": "object",
+      "description": "Symbolic representations of inputs with constraints (e.g., {\"amount\": \"A (where A > 0)\", \"user\": \"U (where U.balance = B)\"})",
+      "additionalProperties": { "type": "string" }
+    },
+    "paths": {
+      "type": "array",
+      "description": "All execution paths through the function",
+      "items": {
+        "type": "object",
+        "required": ["id", "condition", "outcome"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^P[0-9]+$",
+            "description": "Unique path identifier"
+          },
+          "condition": {
+            "type": "string",
+            "description": "The condition that leads to this path (e.g., 'A <= B')"
+          },
+          "path_constraint": {
+            "type": "string",
+            "description": "Full path constraint (conjunction of all conditions to reach this point)"
+          },
+          "outcome": {
+            "type": "string",
+            "description": "What happens on this path (e.g., 'success', 'error: insufficient_funds')"
+          },
+          "final_state": {
+            "type": "string",
+            "description": "State after execution (e.g., 'U.balance = B - A')"
+          },
+          "issue": {
+            "type": "string",
+            "description": "Any issue with this path (e.g., 'UNREACHABLE', 'UNHANDLED')"
+          }
+        }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "description": "Coverage analysis results",
+      "properties": {
+        "paths_found": {
+          "type": "integer",
+          "description": "Total number of paths discovered"
+        },
+        "missing_guards": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Input conditions that are not guarded (e.g., 'A <= 0', 'null input')"
+        },
+        "edge_cases": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Edge cases identified (e.g., 'A = B (exact balance)', 'empty array')"
+        },
+        "unreachable_code": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Code that can never be reached"
+        },
+        "potential_bugs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "location": { "type": "string" },
+              "type": { "type": "string" },
+              "description": { "type": "string" }
+            }
+          },
+          "description": "Potential bugs identified during analysis"
+        }
+      }
+    },
+    "assertions": {
+      "type": "array",
+      "description": "Assertions verified during symbolic execution",
+      "items": {
+        "type": "object",
+        "properties": {
+          "location": { "type": "string" },
+          "assertion": { "type": "string" },
+          "verified": { "type": "boolean" },
+          "counterexample": { "type": "string" }
+        }
+      }
+    }
+  }
+}

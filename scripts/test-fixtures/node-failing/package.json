@@ -1,0 +1,9 @@
+{
+  "name": "test-fixture-node-failing",
+  "version": "1.0.0",
+  "description": "Test fixture with failing tests",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "lint": "exit 1"
+  }
+}

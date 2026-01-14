@@ -1,0 +1,137 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LTLVerification",
+  "description": "Linear Temporal Logic verification for workflow requirements. Models workflows as state machines and verifies temporal properties.",
+  "type": "object",
+  "required": ["states", "transitions", "ltl_properties", "verification_result"],
+  "properties": {
+    "states": {
+      "type": "array",
+      "description": "All states in the workflow state machine",
+      "items": {
+        "type": "object",
+        "required": ["id", "name"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^S[0-9]+$",
+            "description": "Unique state identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable state name"
+          },
+          "properties": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Atomic propositions true in this state (e.g., 'logged_in', 'session_active')"
+          },
+          "is_initial": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether this is an initial state"
+          },
+          "is_accepting": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether this is an accepting/terminal state"
+          }
+        }
+      }
+    },
+    "transitions": {
+      "type": "array",
+      "description": "All transitions between states",
+      "items": {
+        "type": "object",
+        "required": ["from", "to", "action"],
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "Source state ID"
+          },
+          "to": {
+            "type": "string",
+            "description": "Target state ID"
+          },
+          "action": {
+            "type": "string",
+            "description": "Action that triggers this transition (e.g., 'login', 'submit_form')"
+          },
+          "guard": {
+            "type": "string",
+            "description": "Condition that must be true for transition (e.g., 'valid_credentials')"
+          },
+          "effects": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Side effects of the transition (e.g., 'create_session', 'increment_counter')"
+          }
+        }
+      }
+    },
+    "ltl_properties": {
+      "type": "array",
+      "description": "Temporal properties to verify",
+      "items": {
+        "type": "object",
+        "required": ["id", "natural", "formula", "verified"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^P[0-9]+$",
+            "description": "Unique property identifier"
+          },
+          "natural": {
+            "type": "string",
+            "description": "Natural language description of the property"
+          },
+          "formula": {
+            "type": "string",
+            "description": "LTL formula using operators: G (globally), F (finally), X (next), U (until), -> (implies), & (and), | (or), ~ (not)"
+          },
+          "verified": {
+            "type": "boolean",
+            "description": "Whether the property was verified to hold"
+          },
+          "counterexample": {
+            "type": ["array", "null"],
+            "items": { "type": "string" },
+            "description": "If not verified, a sequence of states/actions leading to violation"
+          }
+        }
+      }
+    },
+    "verification_result": {
+      "type": "object",
+      "required": ["all_pass"],
+      "description": "Summary of verification results",
+      "properties": {
+        "all_pass": {
+          "type": "boolean",
+          "description": "Whether all properties passed verification"
+        },
+        "failing_properties": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "IDs of properties that failed verification"
+        },
+        "deadlocks": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "States with no outgoing transitions (excluding accepting states)"
+        },
+        "unreachable_states": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "States that cannot be reached from initial states"
+        },
+        "livelocks": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Cycles that prevent reaching accepting states"
+        }
+      }
+    }
+  }
+}

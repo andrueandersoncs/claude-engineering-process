@@ -1,0 +1,13 @@
+{
+  "story": "Test Story",
+  "slug": "test-story",
+  "source": "direct",
+  "jtbd": {
+    "context": "When running a long-running engineering workflow with multiple tasks",
+    "job": "I want to be alerted when individual tasks exceed expected duration",
+    "outcome": "So I can investigate stuck tasks early and intervene if needed"
+  },
+  "currentPhase": "implement",
+  "completedPhases": ["understand", "research", "scope", "design", "decompose"],
+  "startedAt": "2026-01-14T11:38:25.326Z"
+}

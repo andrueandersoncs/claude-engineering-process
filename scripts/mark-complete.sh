@@ -77,12 +77,18 @@ fi
 if [ $UPDATED -eq 0 ] && grep -q "#### Task $TASK_ID:" "$TASKS_FILE"; then
     # Check if there's already a status line after the task header
     if grep -A1 "#### Task $TASK_ID:" "$TASKS_FILE" | grep -q "^\*\*Status\*\*:"; then
-        sed -i.tmp "/#### Task $TASK_ID:/,/^\*\*Status\*\*:/{s/^\*\*Status\*\*:.*/\*\*Status\*\*: $STATUS_NAME/}" "$TASKS_FILE"
+        # Use awk for complex multi-line replacement (BSD sed compatible)
+        awk -v task="#### Task $TASK_ID:" -v status="**Status**: $STATUS_NAME" '
+            $0 ~ task { found=1 }
+            found && /^\*\*Status\*\*:/ { print status; found=0; next }
+            { print }
+        ' "$TASKS_FILE" > "$TASKS_FILE.tmp" && mv "$TASKS_FILE.tmp" "$TASKS_FILE"
     else
-        # Add status line after task header
-        sed -i.tmp "/#### Task $TASK_ID:/a\\
-**Status**: $STATUS_NAME
-" "$TASKS_FILE"
+        # Add status line after task header (BSD sed compatible)
+        awk -v task="#### Task $TASK_ID:" -v status="**Status**: $STATUS_NAME" '
+            { print }
+            $0 ~ task { print status }
+        ' "$TASKS_FILE" > "$TASKS_FILE.tmp" && mv "$TASKS_FILE.tmp" "$TASKS_FILE"
     fi
     UPDATED=1
 fi
@@ -95,12 +101,18 @@ if [ $UPDATED -eq 1 ]; then
 
     # Update the Progress Tracking table if it exists
     if grep -q "^| Phase" "$TASKS_FILE"; then
-        # Count tasks in each status
-        TOTAL=$(grep -cE '(#### Task [0-9]+\.[0-9]+:|\- \[.\] \*\*Task)' "$TASKS_FILE" || echo "0")
-        COMPLETE=$(grep -cE '(\- \[x\] \*\*Task|\*\*Status\*\*: complete)' "$TASKS_FILE" || echo "0")
-        PERCENT=$((COMPLETE * 100 / TOTAL))
+        # Count tasks in each status (ensure clean integer output)
+        TOTAL=$(grep -cE '(#### Task [0-9]+\.[0-9]+:|- \[.\] \*\*Task)' "$TASKS_FILE" 2>/dev/null | tr -d '[:space:]' || echo "0")
+        COMPLETE=$(grep -cE '(- \[x\] \*\*Task|\*\*Status\*\*: complete)' "$TASKS_FILE" 2>/dev/null | tr -d '[:space:]' || echo "0")
 
-        echo "Progress: $COMPLETE/$TOTAL tasks complete ($PERCENT%)"
+        # Ensure TOTAL and COMPLETE are valid integers
+        TOTAL=${TOTAL:-0}
+        COMPLETE=${COMPLETE:-0}
+
+        if [ "$TOTAL" -gt 0 ] 2>/dev/null; then
+            PERCENT=$((COMPLETE * 100 / TOTAL))
+            echo "Progress: $COMPLETE/$TOTAL tasks complete ($PERCENT%)"
+        fi
     fi
 else
     echo "Warning: Task $TASK_ID not found in $TASKS_FILE" >&2

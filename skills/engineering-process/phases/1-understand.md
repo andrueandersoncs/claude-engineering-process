@@ -201,6 +201,151 @@ Task tool call:
 
 See the [Verification Guide](../VERIFICATION_GUIDE.md) for detailed technique explanations.
 
+### 10. Formal Verification (CRITICAL)
+
+Apply formal verification patterns to ensure requirements are complete and consistent. These produce **structured JSON outputs** that are checked at phase transition.
+
+#### 10.1 SAT/SMT Constraint Encoding
+
+Invoke `requirements-verifier` agent to encode requirements as formal constraints:
+
+```
+Task tool call:
+  subagent_type: "requirements-verifier"
+  prompt: |
+    Perform SAT/SMT-style constraint analysis.
+
+    Requirements:
+    [paste requirements]
+
+    Known constraints from codebase:
+    [list constraints from CLAUDE.md, existing code]
+
+    Output constraint-analysis.json following the schema.
+```
+
+**Output**: `constraint-analysis.json` in story directory
+
+**Gate**: If `satisfiability = "UNSAT"`, BLOCK and present `unsat_core` to user.
+
+#### 10.2 LTL Temporal Verification (For Workflows)
+
+If requirements describe a process or workflow, verify temporal properties:
+
+```
+Task tool call:
+  subagent_type: "requirements-verifier"
+  prompt: |
+    Model this workflow as a state machine and verify LTL properties.
+
+    Workflow:
+    [describe the process]
+
+    Properties to verify:
+    - No deadlocks
+    - All terminal states are reachable
+    - [specific properties from requirements]
+
+    Output ltl-verification.json following the schema.
+```
+
+**Output**: `ltl-verification.json` in story directory (workflow features only)
+
+**Gate**: If `deadlocks.length > 0`, BLOCK and present deadlock states to user.
+
+#### 10.3 Preference Consistency Check
+
+Check requirements against historical user preferences:
+
+```
+Task tool call:
+  subagent_type: "requirements-verifier"
+  prompt: |
+    Check requirements against .preferences.json.
+
+    Load: <project>/.preferences.json
+
+    Check for:
+    - Conflicts with rejected patterns
+    - Alignment with preferred patterns
+    - Consistency with past decisions
+
+    Output preference-check.json.
+```
+
+**Output**: `preference-check.json` in story directory
+
+**Gate**: If hard conflicts exist, WARN user (soft conflicts allow proceed).
+
+#### 10.4 ADVERSARY TESTING (MANDATORY)
+
+**After requirements verification passes, invoke the adversary agent:**
+
+```
+Task tool call:
+  subagent_type: "adversary"
+  prompt: |
+    Generate adversarial test cases for these requirements.
+
+    Story: [story-slug]
+
+    Verified requirements:
+    [paste from verification report]
+
+    Codebase constraints:
+    [list known constraints]
+
+    State machine for scenario generation:
+    {
+      "entities": ["User", "Post", ...],
+      "states": {...},
+      "transitions": {...}
+    }
+
+    Generate at least 3 adversarial cases using:
+    - State combination testing
+    - Transition sequence testing
+    - Concurrent action testing
+
+    Output adversarial-cases.md.
+```
+
+**Output**: `adversarial-cases.md` in story directory
+
+**Gate Condition**: Cannot proceed to Phase 2 without:
+- `adversarial-cases.md` exists
+- At least 3 adversarial cases generated
+- All cases either caught by verification OR documented with resolution
+
+### 11. Update Preferences (After Story Completion)
+
+At the END of the story (not now), update `.preferences.json` with learnings:
+
+```json
+// Add to <project>/.preferences.json:
+{
+  "rejected": [..., {
+    "pattern": "[pattern user rejected during this story]",
+    "story": "[story-slug]",
+    "date": "[today]",
+    "reason": "[why rejected]"
+  }],
+  "preferred": [..., {
+    "pattern": "[pattern user preferred]",
+    "story": "[story-slug]",
+    "date": "[today]"
+  }],
+  "decisions": [..., {
+    "topic": "[decision made]",
+    "choice": "[what was chosen]",
+    "alternatives_rejected": ["..."],
+    "story": "[story-slug]",
+    "date": "[today]",
+    "rationale": "[why]"
+  }]
+}
+```
+
 ## Output
 
 Document in the conversation or a notes file:
@@ -262,6 +407,12 @@ Document in the conversation or a notes file:
 - [ ] **No ambiguities** - multiple interpretations resolved
 - [ ] **Temporal logic checked** (if workflow) - no deadlocks or races
 - [ ] [Requirements Verification Checklist](../checklists/requirement-verification-checklist.md) completed (for non-trivial features)
+
+### Formal Verification Criteria (REQUIRED)
+- [ ] **CRITICAL: `constraint-analysis.json`** exists with `satisfiability != "UNSAT"`
+- [ ] **CRITICAL: `adversarial-cases.md`** exists with at least 3 cases generated
+- [ ] **`preference-check.json`** exists with no hard conflicts (soft conflicts OK)
+- [ ] **`ltl-verification.json`** exists (if workflow) with no deadlocks
 
 ## Common Pitfalls
 

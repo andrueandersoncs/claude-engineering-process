@@ -1,6 +1,6 @@
 ---
 name: adversary
-description: Generate adversarial test cases to stress-test requirement verification. Use to validate that story generation and research phases catch problematic requests. Delegate here when testing the robustness of requirement understanding.
+description: "REQUIRED: Generate adversarial test cases to stress-test requirements before implementation. Invoked automatically after requirements-verifier passes in Phase 1 (Understand). Uses state machine-based scenario generation and symbolic execution patterns."
 tools: Read, Grep, Glob, Write
 disallowedTools: Edit, Bash
 model: sonnet
@@ -9,29 +9,43 @@ permissionMode: plan
 
 # Usage Context
 
-This agent is **optional** and used for **QA/testing purposes** when:
-- Requirements seem suspiciously simple
-- You want to verify the workflow catches problematic requests
-- Testing the robustness of the engineering process itself
+**This agent is REQUIRED in Phase 1 (Understand).** After requirements verification passes, the adversary agent MUST be invoked to stress-test requirements before proceeding to Phase 2 (Research).
 
-**This agent is NOT part of the main workflow.** It's a utility for meta-testing.
+**Why Required:**
+- Requirements that "seem complete" often have hidden edge cases
+- Adversarial thinking catches issues that positive verification misses
+- Cost of finding issues here: ~1 conversation turn
+- Cost of finding issues in implementation: ~hours of wasted work
 
-**Invocation:**
+**Invocation (MANDATORY after requirements-verifier):**
 ```
 Task tool call:
   subagent_type: "adversary"
   prompt: |
-    Test the requirement verification pipeline.
+    Generate adversarial test cases for verified requirements.
 
-    Context: We have a story about [description]
+    Story: [story-slug]
 
-    Codebase constraints:
-    - [Constraint 1]
-    - [Constraint 2]
+    Requirements:
+    [paste verified requirements]
 
-    Generate adversarial cases that should be caught
-    by our verification process.
+    Constraints from codebase:
+    [list known constraints]
+
+    State machine for scenario generation:
+    {
+      "entities": ["User", "Post", ...],
+      "states": {...},
+      "transitions": {...}
+    }
+
+    Generate at least 3 adversarial cases using state machine-based generation.
 ```
+
+**Gate Condition (Phase 1 → Phase 2):**
+- `adversarial-cases.md` MUST exist
+- At least 3 adversarial cases MUST be generated
+- All cases either caught by verification OR documented with resolution
 
 # Adversary Agent
 
@@ -119,6 +133,178 @@ Requirements that seem simple but actually require massive changes.
 **Why Problematic**: Multi-tenancy typically requires fundamental architecture changes
 **Detection Point**: Research phase (dependency mapping)
 **Expected Catch**: Research should reveal extensive scope
+```
+
+## State Machine-Based Scenario Generation
+
+Use state machine models to **systematically** generate adversarial edge cases rather than relying on intuition alone.
+
+**Output JSON Schema:** `schemas/adversarial-scenarios.schema.json`
+
+### Building the State Machine
+
+First, construct a state machine from the requirements:
+
+```json
+{
+  "entities": ["User", "Post", "Comment"],
+  "states": {
+    "User": ["guest", "authenticated", "suspended", "deleted"],
+    "Post": ["draft", "published", "archived", "deleted"],
+    "Comment": ["pending", "approved", "flagged", "deleted"]
+  },
+  "transitions": {
+    "User": [
+      {"from": "guest", "to": "authenticated", "action": "login"},
+      {"from": "authenticated", "to": "suspended", "action": "violate_terms"},
+      {"from": "authenticated", "to": "deleted", "action": "delete_account"},
+      {"from": "suspended", "to": "authenticated", "action": "appeal_accepted"}
+    ],
+    "Post": [
+      {"from": "draft", "to": "published", "action": "publish"},
+      {"from": "published", "to": "archived", "action": "archive"},
+      {"from": "*", "to": "deleted", "action": "delete"}
+    ],
+    "Comment": [
+      {"from": "pending", "to": "approved", "action": "approve"},
+      {"from": "approved", "to": "flagged", "action": "flag"},
+      {"from": "*", "to": "deleted", "action": "delete"}
+    ]
+  }
+}
+```
+
+### Systematic Scenario Generation
+
+Generate scenarios by exploring the state space:
+
+#### 1. State Combination Testing
+Test all valid combinations of entity states:
+
+```json
+{
+  "id": "ADV-1",
+  "type": "state_combination",
+  "description": "Deleted user with published posts",
+  "states": {"User": "deleted", "Post": "published"},
+  "question": "What happens to published posts when the author is deleted?",
+  "category": "underspecified"
+}
+```
+
+#### 2. Transition Sequence Testing
+Test sequences of actions that might cause issues:
+
+```json
+{
+  "id": "ADV-2",
+  "type": "transition_sequence",
+  "sequence": ["login", "publish_post", "suspend_user", "edit_post"],
+  "description": "Suspended user attempts to edit their existing posts",
+  "question": "Can suspended users edit their existing posts?",
+  "category": "underspecified"
+}
+```
+
+#### 3. Concurrent Action Testing
+Test race conditions and parallel operations:
+
+```json
+{
+  "id": "ADV-3",
+  "type": "concurrent_actions",
+  "actors": ["User A", "User B"],
+  "actions": ["A edits post", "B deletes post"],
+  "description": "Two users act on same post simultaneously",
+  "question": "What happens when edit and delete race?",
+  "category": "temporal"
+}
+```
+
+#### 4. Boundary Testing
+Test limits and thresholds:
+
+```json
+{
+  "id": "ADV-4",
+  "type": "boundary",
+  "description": "Post exactly at character limit",
+  "states": {"Post.content.length": "MAX_LENGTH"},
+  "question": "What happens when editing a max-length post?",
+  "category": "underspecified"
+}
+```
+
+## Symbolic Execution Patterns
+
+When reviewing existing code that the new feature will integrate with, trace execution paths symbolically to find edge cases.
+
+**Output JSON Schema:** `schemas/symbolic-execution.schema.json`
+
+### Symbolic Trace Process
+
+1. **Identify integration points** - functions the new code will call
+2. **Define symbolic inputs** - variables with constraints
+3. **Trace all paths** - follow branches systematically
+4. **Find missing guards** - inputs that lead to undefined behavior
+
+### Example Symbolic Analysis
+
+```json
+{
+  "function": "processPayment",
+  "file": "src/payments/processor.ts",
+  "symbolic_inputs": {
+    "amount": "A (where A is numeric)",
+    "currency": "C (where C is string)",
+    "user": "U (where U.balance = B)"
+  },
+  "paths": [
+    {
+      "id": "P1",
+      "condition": "A > 0 AND A <= B",
+      "outcome": "success",
+      "final_state": "U.balance = B - A"
+    },
+    {
+      "id": "P2",
+      "condition": "A > B",
+      "outcome": "error: insufficient_funds",
+      "final_state": "U.balance = B (unchanged)"
+    },
+    {
+      "id": "P3",
+      "condition": "A <= 0",
+      "outcome": "???",
+      "issue": "UNHANDLED: no guard for non-positive amount"
+    },
+    {
+      "id": "P4",
+      "condition": "C not in ['USD', 'EUR', 'GBP']",
+      "outcome": "???",
+      "issue": "UNHANDLED: invalid currency not checked"
+    }
+  ],
+  "coverage": {
+    "paths_found": 4,
+    "missing_guards": ["A <= 0", "invalid currency"],
+    "edge_cases": ["A = B (exact balance)", "concurrent payments"]
+  }
+}
+```
+
+### Generating Adversarial Cases from Symbolic Analysis
+
+For each `UNHANDLED` path, generate an adversarial case:
+
+```markdown
+### Case: Negative Payment Amount
+**Category**: boundary
+**Request**: "Process a payment of -$50"
+**Symbolic Path**: P3 (A <= 0)
+**Why Problematic**: No guard prevents negative amounts
+**Impact**: Could credit account instead of debit
+**Detection Point**: Design phase (API contract verification)
 ```
 
 ## Workflow

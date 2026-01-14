@@ -279,18 +279,22 @@ else
     EXIT_CODE=0
 fi
 
-# Get next phase
-declare -A NEXT_PHASE
-NEXT_PHASE[understand]="research"
-NEXT_PHASE[research]="scope"
-NEXT_PHASE[scope]="design"
-NEXT_PHASE[design]="decompose"
-NEXT_PHASE[decompose]="implement"
-NEXT_PHASE[implement]="validate"
-NEXT_PHASE[validate]="deploy"
-NEXT_PHASE[deploy]="complete"
+# Get next phase (bash 3 compatible - no associative arrays)
+get_next_phase() {
+    case "$1" in
+        understand)  echo "research" ;;
+        research)    echo "scope" ;;
+        scope)       echo "design" ;;
+        design)      echo "decompose" ;;
+        decompose)   echo "implement" ;;
+        implement)   echo "validate" ;;
+        validate)    echo "deploy" ;;
+        deploy)      echo "complete" ;;
+        *)           echo "complete" ;;
+    esac
+}
 
-NEXT="${NEXT_PHASE[$PHASE]:-complete}"
+NEXT=$(get_next_phase "$PHASE")
 
 # Output JSON
 jq -n \

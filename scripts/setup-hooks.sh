@@ -38,6 +38,11 @@ REQUIRED_SCRIPTS=(
     "check-phase-transition.sh"
     "validate-criteria.sh"
     "quick-verification.sh"
+    # Enforcement scripts (ensure verification runs automatically)
+    "enforce-phase-transition.sh"
+    "on-implementer-stop.sh"
+    "on-validator-stop.sh"
+    "on-requirements-verified.sh"
 )
 
 # Optional verification scripts (not required but recommended)
@@ -231,10 +236,16 @@ install_hooks() {
         print_success "Hooks are ready to use!"
         echo ""
         echo "The following hooks are now active:"
-        echo "  • PreToolUse  → phase-gate.sh (validates before file changes)"
-        echo "  • PostToolUse → post-write.sh (downstream backpressure)"
-        echo "  • PostToolUse → quick-verification.sh (fast verification layer)"
-        echo "  • Stop        → completion-check.sh (phase completion check)"
+        echo "  • PreToolUse   → phase-gate.sh (validates before file changes)"
+        echo "  • PreToolUse   → enforce-phase-transition.sh (blocks phase changes until verification passes)"
+        echo "  • PostToolUse  → post-write.sh (downstream backpressure)"
+        echo "  • PostToolUse  → quick-verification.sh (fast verification layer)"
+        echo "  • SubagentStop → on-implementer-stop.sh (runs full validation when implementer finishes)"
+        echo "  • SubagentStop → on-validator-stop.sh (runs mutation/fuzzing when validator finishes)"
+        echo "  • SubagentStop → on-requirements-verified.sh (enforces requirements verification)"
+        echo "  • Stop         → completion-check.sh (phase completion check)"
+        echo ""
+        echo "Verification is now ENFORCED - it runs automatically, not by agent choice."
         echo ""
         echo "See hooks/SETUP.md in the plugin for more details."
     else

@@ -1,0 +1,8 @@
+{
+  "story": "Test Story",
+  "slug": "test-story",
+  "source": "direct",
+  "currentPhase": "implement",
+  "completedPhases": ["understand", "research", "scope", "design", "decompose"],
+  "startedAt": "2024-01-01T00:00:00Z"
+}

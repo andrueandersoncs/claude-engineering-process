@@ -8,6 +8,11 @@
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/phase-gate.sh\" pre-write",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/enforce-phase-transition.sh\"",
+            "timeout": 30
           }
         ]
       }
@@ -29,6 +34,48 @@
         ]
       }
     ],
+    "SubagentStop": [
+      {
+        "matcher": "implementer",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/on-implementer-stop.sh\"",
+            "timeout": 300
+          }
+        ]
+      },
+      {
+        "matcher": "validator",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/on-validator-stop.sh\"",
+            "timeout": 600
+          }
+        ]
+      },
+      {
+        "matcher": "requirements-verifier",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/on-requirements-verified.sh\"",
+            "timeout": 60
+          }
+        ]
+      },
+      {
+        "matcher": "adversary",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR/.claude/hooks/on-adversary-complete.sh\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "matcher": "",
@@ -42,16 +89,14 @@
       }
     ]
   },
-  "_comment": "Verification hooks documentation",
-  "_verification_hooks": {
-    "description": "Additional verification scripts that can be installed for enhanced verification",
-    "scripts": {
-      "verify-requirements.sh": "Run during Phase 1 to verify requirements completeness",
-      "detect-contradictions.sh": "Run during Phase 1 to detect requirement contradictions",
-      "quick-verification.sh": "Run on every file edit (type check, lint, quick tests)",
-      "run-mutation-tests.sh": "Run during Phase 7 for mutation testing",
-      "run-fuzzer.sh": "Run during Phase 7 for fuzz testing"
-    },
-    "installation": "Copy scripts from plugin's scripts/ directory to $CLAUDE_PROJECT_DIR/.claude/hooks/"
+  "_comment": "Enforced verification hooks - ensures verification runs automatically",
+  "_enforcement_summary": {
+    "PreToolUse": "Blocks writes until phase preconditions met AND phase transition is valid (including formal verification)",
+    "PostToolUse": "Runs quick verification (typecheck, lint, quick tests) after every edit",
+    "SubagentStop:implementer": "Runs full validation (tests/lint) when implementer finishes",
+    "SubagentStop:validator": "Runs mutation tests + fuzzing when validator finishes",
+    "SubagentStop:requirements-verifier": "Enforces requirements completeness check",
+    "SubagentStop:adversary": "Validates adversarial testing completeness (3+ cases required)",
+    "Stop": "Blocks incomplete phases from exiting"
   }
 }

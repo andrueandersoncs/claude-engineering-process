@@ -1,0 +1,148 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UserPreferences",
+  "description": "Tracks revealed user preferences for consistency checking across stories. Stores rejected patterns, preferred approaches, and past decisions.",
+  "type": "object",
+  "required": ["version"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Schema version for migration support"
+    },
+    "rejected": {
+      "type": "array",
+      "description": "Patterns the user has explicitly rejected",
+      "items": {
+        "type": "object",
+        "required": ["pattern", "story", "date", "reason"],
+        "properties": {
+          "pattern": {
+            "type": "string",
+            "description": "The rejected pattern (e.g., 'modals for confirmation dialogs')"
+          },
+          "story": {
+            "type": "string",
+            "description": "Story slug where this was rejected"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Date of rejection"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why the user rejected this pattern"
+          },
+          "context": {
+            "type": "string",
+            "description": "Additional context about the rejection"
+          },
+          "severity": {
+            "enum": ["hard", "soft"],
+            "default": "soft",
+            "description": "hard = never use, soft = avoid but negotiable"
+          }
+        }
+      }
+    },
+    "preferred": {
+      "type": "array",
+      "description": "Patterns the user has explicitly preferred",
+      "items": {
+        "type": "object",
+        "required": ["pattern", "story", "date"],
+        "properties": {
+          "pattern": {
+            "type": "string",
+            "description": "The preferred pattern (e.g., 'toast notifications for feedback')"
+          },
+          "story": {
+            "type": "string",
+            "description": "Story slug where this was established"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Date of preference"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why the user prefers this pattern"
+          }
+        }
+      }
+    },
+    "constraints": {
+      "type": "array",
+      "description": "Performance, security, or other constraints established",
+      "items": {
+        "type": "object",
+        "required": ["type", "requirement", "story", "date"],
+        "properties": {
+          "type": {
+            "enum": ["performance", "security", "accessibility", "compatibility", "other"],
+            "description": "Category of constraint"
+          },
+          "requirement": {
+            "type": "string",
+            "description": "The constraint requirement (e.g., 'page load < 200ms')"
+          },
+          "story": {
+            "type": "string",
+            "description": "Story slug where this was established"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Date constraint was established"
+          },
+          "threshold": {
+            "type": "string",
+            "description": "Specific threshold if applicable"
+          }
+        }
+      }
+    },
+    "decisions": {
+      "type": "array",
+      "description": "Past technical decisions for consistency",
+      "items": {
+        "type": "object",
+        "required": ["topic", "choice", "story", "date"],
+        "properties": {
+          "topic": {
+            "type": "string",
+            "description": "What was being decided (e.g., 'state management library')"
+          },
+          "choice": {
+            "type": "string",
+            "description": "What was chosen (e.g., 'Zustand')"
+          },
+          "alternatives_rejected": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Alternatives that were considered but rejected"
+          },
+          "story": {
+            "type": "string",
+            "description": "Story slug where decision was made"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Date of decision"
+          },
+          "rationale": {
+            "type": "string",
+            "description": "Why this choice was made"
+          },
+          "reversible": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether this decision can be revisited"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "slug": "tui-create-story-no-output",
+  "rawInput": "After creating a story through the TUI package's 'Create Story' feature, nothing happens. It goes to step 1, but I see no output.",
+  "generatedAt": "2026-01-14T00:00:00.000Z",
+  "status": "draft",
+  "assumptionCount": 8,
+  "highConfidenceAssumptions": 6,
+  "mediumConfidenceAssumptions": 2,
+  "openQuestions": 6,
+  "acceptanceCriteria": {
+    "mustHave": 5,
+    "shouldHave": 2,
+    "niceToHave": 1
+  },
+  "edgeCases": 8,
+  "researchSources": [
+    "packages/tui/src/components/App.tsx",
+    "packages/tui/src/store/index.ts",
+    "packages/tui/src/components/Dashboard.tsx",
+    "packages/tui/src/components/StoryPicker.tsx",
+    "packages/tui/src/components/StoryCreator.tsx",
+    "docs/stories/tui-inline-story-creation/design.md",
+    "docs/stories/tui-inline-story-creation/tasks.md",
+    "tests/e2e/storyCreation.test.ts",
+    "tests/components/StoryCreator.test.tsx"
+  ],
+  "relatedStories": [
+    "tui-inline-story-creation"
+  ]
+}

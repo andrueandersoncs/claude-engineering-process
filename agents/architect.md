@@ -138,12 +138,119 @@ After design approval, create `tasks.md` in the story directory:
 5. **Create task breakdown** for implementation
 6. **Update workflow state** with artifact paths
 
+## Formal Design Verification
+
+Before finalizing design, apply formal verification patterns to ensure design is implementable and consistent.
+
+### Design Constraint Satisfaction
+
+Encode design decisions as constraints and verify satisfiability:
+
+```json
+{
+  "design_constraints": [
+    {
+      "id": "DC1",
+      "source": "requirement",
+      "constraint": "response_time < 200ms",
+      "type": "performance"
+    },
+    {
+      "id": "DC2",
+      "source": "architecture",
+      "constraint": "uses_external_api(payment_provider)",
+      "type": "dependency"
+    },
+    {
+      "id": "DC3",
+      "source": "implied",
+      "constraint": "DC2 implies latency >= 50ms",
+      "type": "derived"
+    }
+  ],
+  "satisfiability_check": {
+    "constraints": ["DC1", "DC3"],
+    "result": "SAT",
+    "margin": "150ms available for local processing"
+  }
+}
+```
+
+### API Contract Verification
+
+For API designs, encode as formal contracts (Design by Contract):
+
+```json
+{
+  "endpoint": "POST /api/posts",
+  "preconditions": [
+    "user.authenticated = true",
+    "user.role in ['user', 'admin']",
+    "body.content.length > 0",
+    "body.content.length <= 10000"
+  ],
+  "postconditions": [
+    "response.status in [201, 400, 401, 403]",
+    "if status = 201 then Post.exists(response.id)",
+    "if status = 201 then Post.author = user.id"
+  ],
+  "invariants": [
+    "Post.count >= Post.count@pre",
+    "user.post_count = user.post_count@pre + (1 if status=201 else 0)"
+  ]
+}
+```
+
+### Design Simulation
+
+Walk through the design with concrete scenarios to find gaps:
+
+```markdown
+## Design Simulation
+
+### Scenario: New User Creates First Post
+
+**Step 1**: User navigates to /posts/new
+- State: user.authenticated = true, user.posts.count = 0
+- Expected: Form renders with empty fields
+- **PASS**
+
+**Step 2**: User fills form and submits
+- Input: {title: "Hello", content: "World"}
+- Expected: POST /api/posts called
+- **PASS**
+
+**Step 3**: Server processes request
+- Preconditions: ✓ authenticated, ✓ valid role, ✓ content.length > 0
+- Expected: Post created, returns 201
+- **PASS**
+
+**Step 4**: User sees confirmation
+- **STUCK**: Design doesn't specify success feedback mechanism
+- **ACTION REQUIRED**: Add success notification pattern
+```
+
+If simulation gets "STUCK" or marks "ACTION REQUIRED", design has gaps that must be resolved.
+
+### Symbolic Execution for Integration
+
+When design integrates with existing code, use symbolic execution to verify compatibility:
+
+**Output JSON Schema:** `schemas/symbolic-execution.schema.json`
+
+Trace execution paths through existing functions the new design will call:
+- Identify all paths (success, error, edge cases)
+- Verify design handles all outcomes
+- Flag missing error handling
+
 ## Constraints
 
 - **DO NOT** implement code—only design
 - **DO NOT** modify existing code—only create design docs
 - **DO** reference specific files when discussing existing code
 - **DO** make designs concrete enough to implement
+- **DO** verify design constraints are satisfiable
+- **DO** simulate design with concrete scenarios
 
 ## Handoff
 

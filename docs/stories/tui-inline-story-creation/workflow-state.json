@@ -1,0 +1,13 @@
+{
+  "story": "Enable story creation from within the TUI without requiring external slash commands. Users should be able to create a new story directly in the TUI interface instead of being prompted to use /engineering-process:story which is not accessible inside the TUI.",
+  "slug": "tui-inline-story-creation",
+  "source": "direct",
+  "jtbd": {
+    "context": "When working interactively in the TUI interface and wanting to start a new engineering workflow",
+    "job": "I want to initiate a new story workflow without leaving the TUI context",
+    "outcome": "So I can maintain my flow state and start engineering tasks seamlessly from within my current working environment"
+  },
+  "currentPhase": "deploy",
+  "completedPhases": ["understand", "research", "scope", "design", "decompose", "implement", "validate"],
+  "startedAt": "2026-01-13T20:00:00.000Z"
+}

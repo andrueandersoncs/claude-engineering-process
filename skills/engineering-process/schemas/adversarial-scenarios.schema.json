@@ -1,0 +1,133 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AdversarialScenarios",
+  "description": "State machine-based adversarial scenario generation. Systematically generates edge cases and stress tests for requirements.",
+  "type": "object",
+  "required": ["state_machine", "generated_scenarios", "summary"],
+  "properties": {
+    "state_machine": {
+      "type": "object",
+      "description": "The state machine model used for scenario generation",
+      "required": ["entities"],
+      "properties": {
+        "entities": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Domain entities involved (e.g., 'User', 'Post', 'Comment')"
+        },
+        "states": {
+          "type": "object",
+          "description": "Possible states for each entity (e.g., {\"User\": [\"guest\", \"authenticated\", \"suspended\"]})",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        },
+        "transitions": {
+          "type": "object",
+          "description": "Valid transitions for each entity",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "from": { "type": "string" },
+                "to": { "type": "string" },
+                "action": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "generated_scenarios": {
+      "type": "array",
+      "minItems": 3,
+      "description": "Generated adversarial test cases (minimum 3 required)",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "description", "question", "category"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^ADV-[0-9]+$",
+            "description": "Unique scenario identifier"
+          },
+          "type": {
+            "enum": ["state_combination", "transition_sequence", "concurrent_actions", "boundary", "invalid_input", "timing"],
+            "description": "Type of adversarial scenario"
+          },
+          "description": {
+            "type": "string",
+            "description": "Clear description of the adversarial scenario"
+          },
+          "states": {
+            "type": "object",
+            "description": "For state_combination type: the problematic state combination"
+          },
+          "sequence": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "For transition_sequence type: the sequence of actions"
+          },
+          "actors": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "For concurrent_actions type: the actors involved"
+          },
+          "actions": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "For concurrent_actions type: the concurrent actions"
+          },
+          "question": {
+            "type": "string",
+            "description": "The question this scenario raises about requirements"
+          },
+          "category": {
+            "enum": ["contradiction", "underspecified", "impossible", "ontology", "temporal", "scope"],
+            "description": "Category of issue this scenario tests"
+          },
+          "caught_by": {
+            "type": "string",
+            "description": "Which verification step should catch this (if any)"
+          },
+          "resolution": {
+            "type": "string",
+            "description": "How this scenario was resolved or documented"
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": ["total_generated", "caught", "missed"],
+      "description": "Summary of adversarial testing results",
+      "properties": {
+        "total_generated": {
+          "type": "integer",
+          "minimum": 3,
+          "description": "Total number of scenarios generated"
+        },
+        "caught": {
+          "type": "integer",
+          "description": "Number of scenarios caught by verification pipeline"
+        },
+        "missed": {
+          "type": "integer",
+          "description": "Number of scenarios that slipped through"
+        },
+        "gap_patterns": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Patterns in missed scenarios (for improving verification)"
+        },
+        "recommendations": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Recommendations for strengthening verification"
+        }
+      }
+    }
+  }
+}

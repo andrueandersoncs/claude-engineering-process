@@ -1,0 +1,11 @@
+[project]
+name = "test-fixture-python"
+version = "1.0.0"
+description = "Test fixture for validation script testing"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.ruff]
+line-length = 88

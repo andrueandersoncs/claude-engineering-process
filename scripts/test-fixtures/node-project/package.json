@@ -1,0 +1,13 @@
+{
+  "name": "test-fixture-node",
+  "version": "1.0.0",
+  "description": "Test fixture for validation script testing",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node --test tests/**/*.test.js",
+    "test:unit": "node --test tests/unit/*.test.js",
+    "lint": "echo 'Lint passed'",
+    "typecheck": "echo 'Types OK'"
+  },
+  "devDependencies": {}
+}

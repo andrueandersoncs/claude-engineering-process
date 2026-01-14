@@ -103,6 +103,18 @@ parse_tasks() {
 
         # If we're in a task, parse its sections
         if [ $in_task -eq 1 ]; then
+            # Check for **Status**: line (Format 1 status tracking)
+            if [[ "$line" =~ ^\*\*Status\*\*:[[:space:]]*(.+)$ ]]; then
+                local status_text="${BASH_REMATCH[1]}"
+                case "$status_text" in
+                    "complete"|"done") task_status="complete" ;;
+                    "in progress"|"in_progress") task_status="in_progress" ;;
+                    "incomplete"|"todo") task_status="incomplete" ;;
+                    "blocked") task_status="blocked" ;;
+                esac
+                continue
+            fi
+
             # Check for section headers
             if [[ "$line" =~ ^\*\*Description\*\*: ]] || [[ "$line" =~ ^[[:space:]]*-[[:space:]]*\*\*Description\*\*: ]]; then
                 current_section="description"

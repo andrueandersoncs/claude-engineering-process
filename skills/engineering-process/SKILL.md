@@ -55,6 +55,91 @@ DEPLOY     → Run tests before and after deployment
 - [Requirements Verification Checklist](checklists/requirement-verification-checklist.md) - Phase 1 verification
 - [Software Verification Checklist](checklists/software-verification-checklist.md) - Phase 6-7 verification
 
+## CRITICAL: Formal Verification Methods
+
+This workflow uses **structured LLM reasoning patterns** with JSON schemas to apply formal verification techniques. These are NOT external tools—they are JSON-encoded reasoning frameworks that guide systematic verification.
+
+### The Formal Verification Stack
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  PHASE 1: REQUIREMENTS                       │
+│                                                              │
+│  1. SAT/SMT Constraint Encoding (constraint-analysis.json)  │
+│     - Encode requirements as formal constraints              │
+│     - Check for contradictions via constraint solving        │
+│     - Output: SAT/UNSAT with model or unsat core            │
+│                                                              │
+│  2. LTL Temporal Verification (ltl-verification.json)       │
+│     - For workflow requirements only                         │
+│     - Model as state machine with temporal properties        │
+│     - Check for deadlocks, livelocks, property violations   │
+│                                                              │
+│  3. Preference Consistency (preference-check.json)          │
+│     - Load .preferences.json from project root              │
+│     - Flag conflicts with rejected patterns                  │
+│     - Align with preferred patterns                          │
+│                                                              │
+│  4. ADVERSARY TESTING (REQUIRED)                             │
+│     - Invoke adversary agent AFTER requirements-verifier     │
+│     - Generate minimum 3 adversarial scenarios               │
+│     - Use state machine to systematically find edge cases    │
+│                                                              │
+├─────────────────────────────────────────────────────────────┤
+│                  PHASE 4: DESIGN                             │
+│                                                              │
+│  5. Symbolic Execution Patterns (symbolic-traces.json)      │
+│     - Trace execution paths through existing code            │
+│     - Find missing guards and edge cases                     │
+│     - Verify new code integrates correctly                   │
+│                                                              │
+│  6. API Contract Verification                                │
+│     - Encode preconditions/postconditions/invariants         │
+│     - Verify contracts are satisfiable                       │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Formal Verification Outputs by Phase
+
+| Phase | Required Outputs | Gate Condition |
+|-------|-----------------|----------------|
+| **1: Understand** | `constraint-analysis.json`, `adversarial-cases.md`, `preference-check.json` | SAT, 3+ adversarial cases, no hard preference conflicts |
+| **1: Understand** (workflow) | Above + `ltl-verification.json` | No deadlocks, properties verified or documented |
+| **4: Design** | `symbolic-traces.json` (for integration), `api-contracts.json` (for APIs) | No unhandled paths, contracts satisfiable |
+
+### JSON Schema Locations
+
+All schemas are in `skills/engineering-process/schemas/`:
+- `constraint-analysis.schema.json` - SAT/SMT constraint format
+- `ltl-verification.schema.json` - Temporal logic format
+- `adversarial-scenarios.schema.json` - State machine scenario format
+- `symbolic-execution.schema.json` - Code path analysis format
+- `preferences.schema.json` - User preference tracking format
+
+### Phase 1 Formal Verification Sequence
+
+```
+1. INVOKE requirements-verifier
+   - Outputs: constraint-analysis.json, preference-check.json
+   - If workflow: also ltl-verification.json
+
+2. CHECK satisfiability
+   - If UNSAT: BLOCK - present unsat_core to user
+   - If SAT: CONTINUE
+
+3. INVOKE adversary (REQUIRED)
+   - Input: verified requirements + state machine model
+   - Output: adversarial-cases.md with 3+ scenarios
+   - All cases must be caught OR documented
+
+4. VALIDATE phase completion
+   - All formal verification artifacts must exist
+   - No blocking issues
+
+5. PROCEED to Phase 2
+```
+
 ## Workflow State
 
 Each story gets its own directory at `<project>/docs/stories/<story-slug>/` containing all artifacts:
@@ -136,7 +221,7 @@ This workflow uses intelligent delegation to reduce user friction while preservi
 | `validator` | Programmatic phase completion checks | Phase transitions (invoke explicitly via Task tool) |
 | `scope-analyst` | Classify scope as auto-approvable vs. user-required | Phase 3 (Scope) when scope is ambiguous |
 | `decision-maker` | Select from alternatives when clear technical winner exists | Phase 4 (Design) when multiple options exist |
-| `adversary` | Generate adversarial test cases for requirements | Optional: QA/testing verification |
+| **`adversary`** | **REQUIRED: Generate adversarial test cases to stress-test requirements** | **Phase 1 (Understand) - MANDATORY after requirements-verifier** |
 | `requirements-verifier` | Verify requirements for contradictions, preconditions, ambiguity | Phase 1 (Understand) for non-trivial features |
 | `verification-advisor` | Recommend appropriate software verification techniques | Phase 4 (Design), Phase 7 (Validate) |
 

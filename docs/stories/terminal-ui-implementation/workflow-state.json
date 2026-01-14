@@ -1,0 +1,13 @@
+{
+  "story": "Implement a terminal UI around the engineering-process plugin to provide an interactive, visual interface for navigating phases, viewing progress, and managing workflow state",
+  "slug": "terminal-ui-implementation",
+  "source": "direct",
+  "jtbd": {
+    "context": "When working through a multi-phase engineering workflow with the engineering-process plugin",
+    "job": "I want a visual, interactive interface that automates phase progression and shows me where I am",
+    "outcome": "So I can focus on actual engineering decisions rather than manually orchestrating slash commands and reading state files"
+  },
+  "currentPhase": "complete",
+  "completedPhases": ["understand", "research", "scope", "design", "decompose", "implement", "validate", "deploy"],
+  "startedAt": "2026-01-13T00:00:00Z"
+}

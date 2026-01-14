@@ -1,0 +1,124 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ConstraintAnalysis",
+  "description": "SAT/SMT-style constraint analysis for requirements verification. Encodes requirements as formal constraints and checks for satisfiability.",
+  "type": "object",
+  "required": ["constraints", "satisfiability"],
+  "properties": {
+    "constraints": {
+      "type": "array",
+      "description": "All constraints extracted from requirements, codebase, and preferences",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "source", "natural", "formal"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^C[0-9]+$",
+            "description": "Unique constraint identifier (C1, C2, etc.)"
+          },
+          "type": {
+            "enum": ["requirement", "existing", "preference", "derived"],
+            "description": "Source type: requirement (from user story), existing (from codebase), preference (from .preferences.json), derived (inferred)"
+          },
+          "source": {
+            "type": "string",
+            "description": "Specific source location (e.g., 'user-story.md line 5', 'CLAUDE.md', '.preferences.json')"
+          },
+          "natural": {
+            "type": "string",
+            "description": "Natural language description of the constraint"
+          },
+          "formal": {
+            "type": "string",
+            "description": "Formal representation using predicates (e.g., 'CAN(user, EDIT, post)', 'MUTABLE(post.content)')"
+          },
+          "variables": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Variables used in the formal representation"
+          },
+          "domain": {
+            "type": "object",
+            "description": "Type/domain for each variable (e.g., {\"user\": \"User\", \"post\": \"Post\"})"
+          }
+        }
+      }
+    },
+    "implications": {
+      "type": "array",
+      "description": "Logical implications derived from constraints",
+      "items": {
+        "type": "object",
+        "required": ["id", "from", "implies", "reason"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^I[0-9]+$",
+            "description": "Unique implication identifier"
+          },
+          "from": {
+            "type": "string",
+            "description": "Source constraint ID"
+          },
+          "implies": {
+            "type": "string",
+            "description": "The implied constraint in formal notation"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Explanation of why this implication holds"
+          }
+        }
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "description": "Detected conflicts between constraints",
+      "items": {
+        "type": "object",
+        "required": ["constraint_a", "constraint_b", "conflict_type", "explanation"],
+        "properties": {
+          "constraint_a": {
+            "type": "string",
+            "description": "First conflicting constraint ID"
+          },
+          "constraint_b": {
+            "type": "string",
+            "description": "Second conflicting constraint ID"
+          },
+          "conflict_type": {
+            "enum": ["direct", "implied", "temporal", "preference"],
+            "description": "Type of conflict: direct (A and NOT A), implied (via implications), temporal (ordering), preference (with .preferences.json)"
+          },
+          "explanation": {
+            "type": "string",
+            "description": "Clear explanation of why these constraints conflict"
+          },
+          "resolution_options": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Possible ways to resolve the conflict"
+          },
+          "selected_resolution": {
+            "type": "string",
+            "description": "The resolution chosen (if any)"
+          }
+        }
+      }
+    },
+    "satisfiability": {
+      "enum": ["SAT", "UNSAT", "UNKNOWN"],
+      "description": "Overall satisfiability: SAT (all constraints can be satisfied), UNSAT (contradiction found), UNKNOWN (cannot determine)"
+    },
+    "model": {
+      "type": "string",
+      "description": "If SAT, an example assignment that satisfies all constraints"
+    },
+    "unsat_core": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "If UNSAT, the minimal set of conflicting constraint IDs"
+    }
+  }
+}

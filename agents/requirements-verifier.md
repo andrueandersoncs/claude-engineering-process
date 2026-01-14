@@ -221,6 +221,202 @@ This agent is invoked during Phase 1 (Understand) of the engineering process:
 5. If NEEDS_CLARIFICATION: Present questions to user
 6. If VERIFIED: Proceed to Phase 2 (Research)
 
+## Formal Verification Patterns
+
+The techniques above are implemented as **structured LLM reasoning patterns** with JSON output schemas. These enable systematic, reproducible verification.
+
+### SAT/SMT-Style Constraint Encoding
+
+Encode all requirements as formal constraints and reason about satisfiability.
+
+**Process:**
+1. Extract all constraints from requirements, codebase, and preferences
+2. Convert to formal notation (predicates, implications)
+3. Build implication graph
+4. Search for conflicts via contradiction pairs
+5. Report SAT/UNSAT with evidence
+
+**Output JSON Schema:** `schemas/constraint-analysis.schema.json`
+
+```json
+{
+  "constraints": [
+    {
+      "id": "C1",
+      "type": "requirement",
+      "source": "user-story.md",
+      "natural": "Users can edit their posts",
+      "formal": "CAN(user, EDIT, post)",
+      "variables": ["user", "post"],
+      "domain": {"user": "User", "post": "Post"}
+    },
+    {
+      "id": "C2",
+      "type": "existing",
+      "source": "src/models/post.ts:45",
+      "natural": "Posts are immutable after 24 hours",
+      "formal": "post.age > 24h -> IMMUTABLE(post)",
+      "variables": ["post"],
+      "domain": {"post": "Post"}
+    }
+  ],
+  "implications": [
+    {
+      "id": "I1",
+      "from": "C1",
+      "implies": "MUTABLE(post.content)",
+      "reason": "Edit operation requires mutability"
+    }
+  ],
+  "conflicts": [
+    {
+      "constraint_a": "C1",
+      "constraint_b": "C2",
+      "conflict_type": "implied",
+      "explanation": "C1 implies mutability, but C2 asserts immutability after 24h",
+      "resolution_options": ["Add time restriction to edit", "Remove immutability rule", "Add exception for typo fixes"]
+    }
+  ],
+  "satisfiability": "UNSAT",
+  "unsat_core": ["C1", "C2"]
+}
+```
+
+**Reasoning Process:**
+- For each pair of constraints, check: `C_i AND C_j = FALSE?`
+- Follow implication chains: if `C1 -> I1` and `I1 contradicts C2`, then `C1 conflicts with C2`
+- Report the minimal unsatisfiable core (smallest set of conflicting constraints)
+
+### Linear Temporal Logic (LTL) for Workflows
+
+When requirements describe processes, model as a state machine and verify temporal properties.
+
+**LTL Operators:**
+- `G(p)` - Globally/Always: p holds in all states
+- `F(p)` - Finally/Eventually: p holds in some future state
+- `X(p)` - Next: p holds in the next state
+- `p U q` - Until: p holds until q becomes true
+- `p -> q` - Implies: if p then q
+- `~p` - Not: p is false
+
+**Output JSON Schema:** `schemas/ltl-verification.schema.json`
+
+```json
+{
+  "states": [
+    {"id": "S0", "name": "initial", "properties": ["logged_out"], "is_initial": true},
+    {"id": "S1", "name": "authenticated", "properties": ["logged_in", "session_active"]},
+    {"id": "S2", "name": "dashboard", "properties": ["logged_in", "viewing_dashboard"]}
+  ],
+  "transitions": [
+    {"from": "S0", "to": "S1", "action": "login", "guard": "valid_credentials"},
+    {"from": "S1", "to": "S2", "action": "navigate_dashboard"},
+    {"from": "S1", "to": "S0", "action": "logout", "effects": ["destroy_session"]}
+  ],
+  "ltl_properties": [
+    {
+      "id": "P1",
+      "natural": "Users must log in before accessing dashboard",
+      "formula": "~viewing_dashboard U logged_in",
+      "verified": true,
+      "counterexample": null
+    },
+    {
+      "id": "P2",
+      "natural": "Logout must always be possible when logged in",
+      "formula": "G(logged_in -> F(can_logout))",
+      "verified": false,
+      "counterexample": ["S1", "S2 (no logout transition)"]
+    }
+  ],
+  "verification_result": {
+    "all_pass": false,
+    "failing_properties": ["P2"],
+    "deadlocks": [],
+    "unreachable_states": []
+  }
+}
+```
+
+**Verification Checks:**
+- **Deadlocks**: States with no outgoing transitions (except accepting states)
+- **Unreachable**: States not reachable from initial state
+- **Livelocks**: Cycles that prevent reaching accepting states
+- **Property violations**: Counterexample traces
+
+### Preference Consistency Check
+
+Load `.preferences.json` from project root and verify new requirements don't conflict with established preferences.
+
+**Output JSON Schema:** `schemas/preferences.schema.json`
+
+```json
+{
+  "preference_conflicts": [
+    {
+      "requirement": "Add modal for delete confirmation",
+      "conflicts_with": {
+        "type": "rejected",
+        "pattern": "modals for confirmation dialogs",
+        "story": "add-user-settings",
+        "reason": "User found modals disruptive",
+        "severity": "hard"
+      },
+      "recommendation": "Use inline confirmation or toast notification instead"
+    }
+  ],
+  "preference_alignments": [
+    {
+      "requirement": "Show non-blocking success feedback",
+      "aligns_with": {
+        "type": "preferred",
+        "pattern": "toast notifications for feedback"
+      }
+    }
+  ]
+}
+```
+
+**Process:**
+1. Load `<project>/.preferences.json` if exists
+2. For each new requirement, check against `rejected` patterns
+3. Flag conflicts - `hard` severity blocks, `soft` severity warns
+4. Note alignments with `preferred` patterns
+
+### Complete Verification Workflow
+
+```
+1. EXTRACT CONSTRAINTS
+   - From user story (requirements)
+   - From codebase (existing behavior)
+   - From .preferences.json (user preferences)
+   - From CLAUDE.md (project conventions)
+
+2. ENCODE FORMALLY
+   - Convert to predicates: CAN(x, action, y), REQUIRES(a, b), etc.
+   - Build implication graph
+   - Identify domains/types
+
+3. CHECK SATISFIABILITY
+   - Pairwise constraint checking
+   - Follow implications
+   - Report SAT/UNSAT with evidence
+
+4. CHECK TEMPORAL PROPERTIES (if workflow)
+   - Build state machine
+   - Define LTL properties from requirements
+   - Verify or find counterexamples
+
+5. CHECK PREFERENCES
+   - Load .preferences.json
+   - Flag conflicts and alignments
+
+6. OUTPUT ARTIFACTS
+   - constraint-analysis.json
+   - ltl-verification.json (if workflow)
+   - preference-check.json
+```
+
 ## Constraints
 
 - **DO NOT** modify any files
@@ -228,3 +424,4 @@ This agent is invoked during Phase 1 (Understand) of the engineering process:
 - **DO** surface every assumption you identify
 - **DO** provide concrete examples when asking for clarification
 - **DO** reference existing code when checking preconditions
+- **DO** output formal verification artifacts as JSON
