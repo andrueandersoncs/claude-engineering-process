@@ -1,0 +1,3 @@
+[submodule "modules/tla-plus"]
+	path = modules/tla-plus
+	url = ../claude-tla-plus-plugin

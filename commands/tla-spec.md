@@ -1,0 +1,1 @@
+../modules/tla-plus/commands/spec.md
